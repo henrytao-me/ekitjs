@@ -307,7 +307,7 @@ module.exports = function(instance, def) {
 								hidden_fields.push(key);
 							};
 						});
-
+						
 						// filter function fields in column with hidden fields
 						var funcs = {};
 						_.each(self._column, function(column, name) {
