@@ -5,7 +5,7 @@ module.exports = function(instance) {
 	 * core type: auto, func, object, array
 	 * need to support: string, number, date, datetime, boolean, selection
 	 */
-	
+
 	instance.base.type = {};
 
 	// type: auto
@@ -104,13 +104,11 @@ module.exports = function(instance) {
 		},
 
 		checkDataType: function(data) {
+			data === undefined ? data = {} : null;
 			if(!(_.isObject(data) && !_.isArray(data))) {
 				return false;
 			};
-			for(var i in data) {
-				if(this._column[i] === undefined) {
-					continue;
-				};
+			for(var i in this._column) {
 				if(!this._column[i].checkDataType(data[i])) {
 					return false;
 				};
@@ -119,6 +117,7 @@ module.exports = function(instance) {
 		},
 
 		validate: function(data) {
+			data === undefined ? data = {} : null;
 			if(!this.checkDataType(data)) {
 				throw {
 					msg: 'invalid datatype',
@@ -131,11 +130,16 @@ module.exports = function(instance) {
 				data[name] = column.validate(data[name]);
 			});
 			// remove all undefined data
+			data = _.encodeObject(data);
 			_.each(data, function(value, key) {
 				if(value === undefined) {
 					delete data[key];
 				};
 			});
+			data = _.decodeObject(data);
+			if(_.keys(data).length === 0) {
+				data = undefined;
+			}
 			return data;
 		},
 
@@ -166,6 +170,7 @@ module.exports = function(instance) {
 		},
 
 		checkDataType: function(data) {
+			data === undefined ? data = [] : null;
 			if(!_.isArray(data)) {
 				return false;
 			};
@@ -178,6 +183,7 @@ module.exports = function(instance) {
 		},
 
 		validate: function(data, type) {
+			data === undefined ? data = [] : null;
 			if(!this.checkDataType(data)) {
 				throw {
 					msg: 'invalid datatype',
@@ -189,6 +195,9 @@ module.exports = function(instance) {
 			for(var i in data) {
 				data[i] = this._element.validate(data[i]);
 			};
+			if(data.length === 0) {
+				data = undefined;
+			}
 			return data;
 		}
 	});

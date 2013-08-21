@@ -20,15 +20,19 @@ module.exports = function(instance, def) {
 					(function(column, key) {
 						var callback = arguments.callee;
 						if(_.isArray(column)) {
-							if(_.isObject(column) && !_.isArray(column)) {
-								_.each(column, function(v, k) {
-									callback(column[k], k);
+							if(_.isObject(column[0]) && !_.isArray(column[0])) {
+								_.each(column[0], function(v, k) {
+									callback(column[0][k], key + '.$.' + k);
 								});
 							} else {
 								callback(column[0], key);
 							};
 						} else {
-							column.__name = key;
+							if(_.isObject(column)) {
+								if(column.__type !== undefined) {
+									column.__name = key;
+								};
+							};
 						};
 					})(columns[key], key);
 				});
@@ -38,24 +42,26 @@ module.exports = function(instance, def) {
 			// re-init column, support quick define: {}: object datatype, []: array datatype
 			try {
 				var tmp = {};
-				var callback = function(res, value) {
+				var callback = function(res, value, key) {
 					var args = arguments;
 					var tmp = value;
 					if(_.isArray(value)) {
 						var a = {
 							res: value[0]
 						};
-						args.callee(a, value[0]);
+						args.callee(a, value[0], key + '.$');
 						tmp = instance.base.types.array(a['res']);
+						tmp.__name = key + '.$';
 					} else if(_.isObject(value) && value.__type === undefined) {
 						_.each(tmp, function(v, k) {
 							var a = {
 								res: v
 							};
-							args.callee(a, v);
+							args.callee(a, v, key + '.' + k);
 							tmp[k] = a.res;
 						});
 						tmp = instance.base.types.object(tmp);
+						tmp.__name = key;
 					}
 					res.res = tmp;
 				};
@@ -63,7 +69,7 @@ module.exports = function(instance, def) {
 					var res = {
 						res: value
 					};
-					callback(res, value);
+					callback(res, value, key);
 					tmp[key] = res.res;
 				});
 				this._column = tmp;
