@@ -7,7 +7,7 @@
 		"name": "Henry Tao",
 		"email": "hi@henrytao.me"
 	},
-	"main": "app.js",
+	"main": "index.js",
 	"version": "0.1.0",
 	"dependencies": {
 		"ejs": "*",
