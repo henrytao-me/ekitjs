@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "A small node.js module to provide some convenience methods for dealing with dir.",
   "main": "index",
-  "homepage": "https://github.com/hungtaoquang",
+  "homepage": "https://github.com/henrytao-me/ekit-dir",
   "author": {
     "name": "Henry Tao",
-    "email": "hungtaoquang@gmail.com",
-    "url": "https://github.com/hungtaoquang"
+    "email": "hi@henrytao.me",
+    "url": "https://github.com/henrytao-me"
   },
   "directories": {
     "lib": "lib"
