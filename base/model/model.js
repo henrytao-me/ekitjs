@@ -1,6 +1,6 @@
 var path = require('path');
 
-module.exports = function(instance) {
+module.exports = function(instance, def) {
 
 	var __class = {
 		_name: 'unknow',
@@ -10,17 +10,32 @@ module.exports = function(instance) {
 		_index: null,
 
 		_collection: null,
-		_column: null,
 		_db: null,
 
 		init: function() {
-			// re-init column
-			this._initColumn();
-			// call super
-			this._super.apply(this, arguments);
-		},
-
-		_initColumn: function() {
+			// support __name in each field
+			var columns = _.encodeObject(this._column, '__type');
+			try {
+				_.each(columns, function(column, key) {
+					(function(column, key) {
+						var callback = arguments.callee;
+						if(_.isArray(column)) {
+							if(_.isObject(column) && !_.isArray(column)) {
+								_.each(column, function(v, k) {
+									callback(column[k], k);
+								});
+							} else {
+								callback(column[0], key);
+							};
+						} else {
+							column.__name = key;
+						};
+					})(columns[key], key);
+				});
+			} catch(ex) {
+			};
+			this._column = _.decodeObject(columns);
+			// re-init column, support quick define: {}: object datatype, []: array datatype
 			try {
 				var tmp = {};
 				var callback = function(res, value) {
@@ -55,57 +70,40 @@ module.exports = function(instance) {
 			} catch(ex) {
 				throw ex;
 			};
-		},
-
-		_checkCallback: function(args) {
-			var res = [];
-			try {
-				var is_func = false;
-				for(var i in args) {
-					res.push(args[i]);
-					if( typeof args[i] === 'function') {
-						is_func = true;
-					};
-				};
-				if(is_func === false) {
-					res.push(function() {
-					});
-				};
-			} catch(ex) {
-				return null;
-			};
-			return res;
+			// call super
+			this._super.apply(this, arguments);
 		},
 
 		getCollection: function(callback) {
 			var log = this;
-
-			if(this.__collection !== null) {
-				callback(this.__collection);
+			if(this._collection) {
+				callback(this._collection);
 			} else {
 				if(this.getDB()) {
 					this.getDB().collection(this._name, function(err, collection) {
 						if(!err) {
-							this.__collection = collection;
-							callback(this.__collection);
+							this._collection = collection;
+							callback(this._collection);
 						} else {
-							log.log({
+							throw {
 								func: 'getCollection',
 								message: 'collection is null'
-							});
+							};
 						};
-					});
-				} else {
-					log.log({
-						func: 'getCollection',
-						message: 'db is null'
 					});
 				};
 			};
 		},
 
 		getDB: function() {
-			return this.__db === null ? this.__db = instance._config.db : this.__db;
+			this._db === null ? this._db = def.db : null;
+			if(this._db === null) {
+				throw {
+					func: 'getDB',
+					message: 'db is null'
+				};
+			};
+			return this._db;
 		},
 
 		create_validate: function(args) {
@@ -220,7 +218,7 @@ module.exports = function(instance) {
 		create: function() {
 			var log = this;
 			var self = this;
-			var args = this._checkCallback(arguments);
+			var args = _.initCallback(arguments);
 			// get out callback
 			var callback = args.pop();
 			args.push(function(err, result) {
@@ -236,7 +234,7 @@ module.exports = function(instance) {
 			} catch(ex) {
 				log.log({
 					func: 'create',
-					data: JSON.stringify(arguments),
+					args: JSON.stringify(arguments),
 					ex: ex
 				});
 				return false;
@@ -251,7 +249,7 @@ module.exports = function(instance) {
 		read: function() {
 			var log = this;
 			var self = this;
-			var args = this._checkCallback(arguments);
+			var args = _.initCallback(arguments);
 			// get out callback
 			var callback = args.pop();
 			// remove disable _id field
@@ -378,7 +376,7 @@ module.exports = function(instance) {
 		update: function() {
 			var log = this;
 			var self = this;
-			var args = this._checkCallback(arguments);
+			var args = _.initCallback(arguments);
 			// get out callback
 			var callback = args.pop();
 			args.push(function(err, result) {
@@ -422,7 +420,7 @@ module.exports = function(instance) {
 		'delete': function() {
 			var log = this;
 			var self = this;
-			var args = this._checkCallback(arguments);
+			var args = _.initCallback(arguments);
 			// get out callback
 			var callback = args.pop();
 			args.push(function(err, result) {

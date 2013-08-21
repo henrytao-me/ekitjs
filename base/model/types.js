@@ -7,7 +7,7 @@ module.exports = function(instance) {
 	
 	instance.base.types = {};
 	
-	instance.base.types.__reload = function(){
+	instance.base.types.refresh = function(){
 		// reset types value
 		instance.base.types = {};
 		
@@ -22,7 +22,10 @@ module.exports = function(instance) {
 				};
 			})(value, key);
 		});
+		
+		// backup refresh
+		instance.base.types.refresh = arguments.callee;		
 	};
 	
-	instance.base.types.__reload();
+	instance.base.types.refresh();
 };

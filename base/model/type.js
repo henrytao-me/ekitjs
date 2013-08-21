@@ -18,7 +18,7 @@ module.exports = function(instance) {
 			// init default value
 			_.each({
 				require: false,
-				def: undefined //only effect when require = true
+				def: undefined // only effect when require = true
 			}, function(value, key) {
 				opt[key] === undefined ? opt[key] = value : null;
 			});
@@ -39,17 +39,19 @@ module.exports = function(instance) {
 				if(this.get('def') === undefined) {
 					throw {
 						msg: 'require value',
-						data: data
+						field: this.__name,
+						define_type: this.__type
 					};
 				} else {
 					data = this.get('def');
 				};
 			};
-			if(this.checkDataType(data) !== true) {
+			if(!this.checkDataType(data)) {
 				throw {
 					msg: 'invalid datatype',
-					type: this.__type,
-					data: data
+					field: this.__name,
+					define_type: this.__type,
+					input_data: data
 				};
 			};
 			return data;
@@ -102,14 +104,14 @@ module.exports = function(instance) {
 		},
 
 		checkDataType: function(data) {
-			if(!(_.isObject(data) === true && _.isArray(data) !== true)) {
+			if(!(_.isObject(data) && !_.isArray(data))) {
 				return false;
 			};
 			for(var i in data) {
 				if(this._column[i] === undefined) {
 					continue;
 				};
-				if(this._column[i].checkDataType(data[i]) !== true) {
+				if(!this._column[i].checkDataType(data[i])) {
 					return false;
 				};
 			};
@@ -117,11 +119,12 @@ module.exports = function(instance) {
 		},
 
 		validate: function(data) {
-			if(!(_.isObject(data) && !_.isArray(data))) {
+			if(!this.checkDataType(data)) {
 				throw {
 					msg: 'invalid datatype',
-					type: this.__type,
-					data: data
+					field: this.__name,
+					define_type: this.__type,
+					input_data: data
 				};
 			};
 			_.each(this._column, function(column, name) {
@@ -167,7 +170,7 @@ module.exports = function(instance) {
 				return false;
 			};
 			for(var i in data) {
-				if(this._element.checkDataType(data[i]) !== true) {
+				if(!this._element.checkDataType(data[i])) {
 					return false;
 				};
 			};
@@ -175,11 +178,12 @@ module.exports = function(instance) {
 		},
 
 		validate: function(data, type) {
-			if(!_.isArray(data)) {
+			if(!this.checkDataType(data)) {
 				throw {
 					msg: 'invalid datatype',
-					type: this.__type,
-					data: data
+					field: this.__name,
+					define_type: this.__type,
+					input_data: data
 				};
 			};
 			for(var i in data) {
