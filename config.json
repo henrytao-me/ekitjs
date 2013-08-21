@@ -1,0 +1,6 @@
+{
+	"addons_path": [],
+	"mongo_connection_string": "mongodb://127.0.0.1:27017/ekitjs",
+	"port": 3000,
+	"view engine": "html"
+}

@@ -1,0 +1,35 @@
+{
+  "name": "ekit-dir",
+  "version": "0.1.0",
+  "description": "A small node.js module to provide some convenience methods for dealing with dir.",
+  "main": "index",
+  "homepage": "https://github.com/hungtaoquang",
+  "author": {
+    "name": "Henry Tao",
+    "email": "hungtaoquang@gmail.com",
+    "url": "https://github.com/hungtaoquang"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {},
+  "engines": {
+    "node": ">= 0.10.5"
+  },
+  "licenses": [
+    "MIT"
+  ],
+  "keywords": [
+    "ekit-dir",
+    "directory",
+    "dir",
+    "subdir",
+    "file",
+    "Node.js",
+    "fs"
+  ],
+  "readme": "A small node.js module to provide some convenience methods for dealing with dir.",
+  "readmeFilename": "README.md",
+  "_id": "ekit-dir@0.1.0",
+  "_from": "ekit-dir@0.1.0"
+}

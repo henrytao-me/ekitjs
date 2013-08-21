@@ -1,0 +1,22 @@
+{
+	"name": "ekitjs",
+	"description": "EkitJS Framework for Awesome Web Development with Javascript in NodeJS.",
+	"homepage": "http://ekitjs.com",
+	"keywords": ["ekitjs", "web", "javascript", "module", "mvc", "mongodb"],
+	"author": {
+		"name": "Henry Tao",
+		"email": "hi@henrytao.me"
+	},
+	"main": "app.js",
+	"version": "0.1.0",
+	"dependencies": {
+		"ejs": "*",
+		"ekit-dir": "*",
+		"express": "3.3.2",
+		"mongodb": "*",
+		"underscore": "*"		
+	},
+	"license": "MIT",
+	"readme": "",
+	"readmeFilename": "README.md"
+}
