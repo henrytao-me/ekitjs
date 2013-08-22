@@ -365,11 +365,11 @@ module.exports = function(instance, def) {
 			var args = _.initCallback(arguments);
 			// get out callback
 			var callback = args.pop();
-			args.push(function(err, result) {
+			args.push(function(err, result, extra) {
 				if(err) {
-					callback.call(self, err, 0);
+					callback.call(self, err, 0, extra);
 				} else {
-					callback.call(self, null, result);
+					callback.call(self, null, result, extra);
 				};
 			});
 			// init full args
