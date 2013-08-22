@@ -439,17 +439,12 @@ module.exports = function(instance, def) {
 			// get out callback
 			var callback = args.pop();
 			args.push(function(err, result) {
-				if(err) {
-					callback.call(self, null);
-				} else {
-					callback.call(self, result);
-				};
+				callback.call(self, err, result);
 			});
 			// delete
 			this.getCollection(function(collection) {
 				collection.remove.apply(collection, args);
 			});
-			return true;
 		}
 	};
 
