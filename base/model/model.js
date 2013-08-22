@@ -127,97 +127,49 @@ module.exports = function(instance, def) {
 			return args;
 		},
 
-		_rebuild_key_value: function(key, value) {
-			var res = {};
-			var keys = key.split('.');
-			(function(res, keys, value) {
-				if(keys.length === 1) {// object
-					res[keys[0]] = value;
-					return;
-				};
-				if(keys.length === 0) {// array
-					res.push(value);
-					return;
-				};
-				// check array
-				if(!isNaN(keys[1]) || keys[1] === '$') {
-					if(keys[2] === undefined) {
-						var a = [];
-						var b = keys.slice(2);
-						arguments.callee(a, b, value);
-						res[keys[0]] = a;
-					} else {
-						var a = {};
-						var b = keys.slice(2);
-						arguments.callee(a, b, value);
-						res[keys[0]] = [a];
-					};
-				} else {
-					var a = {};
-					var b = keys.slice(1);
-					arguments.callee(a, b, value);
-					res[keys[0]] = a;
-				};
-			})(res, keys, value);
-			return res;
-		},
-
 		update_validate: function(selector, document, options) {
 			var log = this;
 			var self = this;
-			var set = document.$set;
-			var push = document.$push;
 			var columns = this._column;
-			_.isObject(options) ? null : options = {};
-			try {
-				// set
-				if(_.isObject(set)) {
-					_.each(set, function(value, key) {
-						// rebuild key
-						var docs = self._rebuild_key_value(key, value);
-						// check validation
-						_.each(docs, function(data, name) {
-							if(columns[name] !== undefined) {
-								if(columns[name].checkDataType(data) !== true) {
-									throw {
-										msg: 'invalid datatype',
-										type: columns[name].__type,
-										data: docs
-									};
-								};
-							};
-						});
-					});
+			/*
+			* fields query
+			*/
+			// $inc: don't need to check datatype
+
+			// $rename: doesn't support
+			if(document.$rename) {
+				throw {
+					msg: "ekitjs doesn't support $rename"
 				};
-				// push
-				if(_.isObject(push)) {
-					_.each(push, function(value, key) {
-						// rebuild key
-						var docs = self._rebuild_key_value([key, '$'].join('.'), value);
-						// check validation
-						_.each(docs, function(data, name) {
-							if(columns[name] !== undefined) {
-								if(columns[name].checkDataType(data) !== true) {
-									throw {
-										msg: 'invalid datatype',
-										type: columns[name].__type,
-										data: docs
-									};
-								};
-							};
-						});
-					});
+			};
+
+			// $setOnInsert: use on upsert, check when create
+
+			// $set: don't know how to check datatype yet. It's too complicated. I trust you.
+
+			// $unset: doesn't support
+			if(document.$unset) {
+				throw {
+					msg: "ekitjs doesn't support $unset"
 				};
-			} catch(ex) {
-				throw ex;
-				// log.log({
-				// func: 'update_validate',
-				// msg: 'invalid input',
-				// e: JSON.stringify(arguments),
-				// ex: ex
-				// });
-				return false;
-			}
+			};
+
+			/*
+			* array query
+			*/
+
+			// $addToSet: I trust you.
+
+			// $pop: I trust you.
+
+			// $pullAll: I trust you.
+
+			// $pull: I trust you.
+
+			// $pushAll: I trust you.
+
+			// $push: I trust you.
+
 			return true;
 		},
 
@@ -228,11 +180,7 @@ module.exports = function(instance, def) {
 			// get out callback
 			var callback = args.pop();
 			args.push(function(err, result) {
-				if(err) {
-					callback.call(self, null);
-				} else {
-					callback.call(self, result);
-				};
+				callback.call(self, err, result);
 			});
 			// validate args
 			try {
@@ -243,13 +191,14 @@ module.exports = function(instance, def) {
 					args: JSON.stringify(arguments),
 					ex: ex
 				});
-				return false;
+				callback.call(self, ex, null);
+				return;
 			};
 			// execute
 			this.getCollection(function(collection) {
 				collection.insert.apply(collection, args);
 			});
-			return true;
+			return;
 		},
 
 		read: function() {
@@ -275,24 +224,25 @@ module.exports = function(instance, def) {
 			this.getCollection(function(collection) {
 				collection.find.apply(collection, args).toArray(function(err, data) {
 					if(err) {
-						return callback.call(self, null);
+						return callback.call(self, err, []);
 					} else {
 						/*
 						* init function field (store === false)
 						*/
 						// init loop injection
 						if(self.___loop_injection === true) {
-							return callback.call(self, data);
+							return callback.call(self, null, data);
 						};
 						self.___loop_injection = true;
 
 						// callback & reset loop_injection
 						var success = function() {
-							try{
+							try {
 								self.___loop_injection = false;
-								delete self.___loop_injection;	
-							}catch(ex){};							
-							callback.call(self, data);
+								delete self.___loop_injection;
+							} catch(ex) {
+							};
+							callback.call(self, null, data);
 						};
 
 						// get ids
@@ -311,12 +261,13 @@ module.exports = function(instance, def) {
 							if(value === 0) {
 								hidden_fields.push(key);
 								isQueryHide = true;
-							}else if(value === 1){
+							} else if(value === 1) {
 								show_fields.push(key);
 								isQueryHide = false;
-							};
+							}
+							;
 						});
-						
+
 						// filter function fields in column with hidden fields
 						var funcs = {};
 						_.each(self._column, function(column, name) {
@@ -336,25 +287,26 @@ module.exports = function(instance, def) {
 								delete funcs[key];
 								return;
 							};
-							if(isQueryHide === true){
+							if(isQueryHide === true) {
 								// remove function field in hidden_fields
 								_.each(hidden_fields, function(field) {
 									if(key.indexOf(field) === 0) {
 										delete funcs[key];
 									}
-								});	
-							}else if(isQueryHide === false){
+								});
+							} else if(isQueryHide === false) {
 								// remove function field not in show_fields
 								var isIn = false;
-								_.each(show_fields, function(field){
-									if(key.indexOf(field) === 0){
+								_.each(show_fields, function(field) {
+									if(key.indexOf(field) === 0) {
 										isIn = true;
 									};
 								});
-								if(!isIn){
+								if(!isIn) {
 									delete funcs[key];
 								};
-							};							
+							}
+							;
 						});
 
 						// sort funcs by sequence
@@ -387,10 +339,10 @@ module.exports = function(instance, def) {
 								};
 							})(func, key, opt));
 						});
-						
-						if(sequence.length === 0){
+
+						if(sequence.length === 0) {
 							success();
-						}else{
+						} else {
 							(function(sequence) {
 								var args = arguments;
 								if(sequence.length === 0) {
@@ -400,7 +352,7 @@ module.exports = function(instance, def) {
 								func(function() {
 									args.callee(sequence);
 								});
-							})(sequence);	
+							})(sequence);
 						};
 					};
 				});
@@ -415,40 +367,69 @@ module.exports = function(instance, def) {
 			var callback = args.pop();
 			args.push(function(err, result) {
 				if(err) {
-					callback.call(self, null);
+					callback.call(self, err, 0);
 				} else {
-					callback.call(self, result);
+					callback.call(self, null, result);
 				};
 			});
 			// init full args
-			_.isFunction(args[3]) ? null : args[3] = args[2];
-			_.isFunction(args[2]) ? args[2] = {} : null;
-			// remove upsert
-			if(args[2].upsert === true) {
-				log.log({
-					msg: "do not allow upsert yet"
-				});
+			if(args.length === 3) {
+				args[3] = args[2];
+				args[2] = {};
 			};
-			args[2].upsert = false;
-			// validate args
-			// validate args
-			try {
-				if(this.update_validate(args[0], args[1], args[2]) !== true) {
-					return false;
+			// normal update
+			var func_update = function() {
+				// validate args
+				try {
+					// remove $setOnInsert
+					delete args[1].$setOnInsert;
+					// start validate
+					this.update_validate(args[0], args[1], args[2]);
+				} catch(ex) {
+					log.log({
+						func: 'update',
+						args: JSON.stringify(arguments),
+						ex: ex
+					});
+					callback.call(self, ex, 0);
+					return;
 				};
-			} catch(ex) {
-				log.log({
-					func: 'update',
-					data: JSON.stringify(arguments),
-					ex: ex
+				// start update
+				this.getCollection(function(collection) {
+					collection.update.apply(collection, args);
 				});
-				return false;
 			};
-			// update
-			this.getCollection(function(collection) {
-				collection.update.apply(collection, args);
-			});
-			return true;
+
+			// check upsert
+			var upsert = args[2].upsert;
+			delete args[2].upsert;
+			if(upsert === true) {
+				this.read(args[0], {
+					_id: 1
+				}, function(err, data) {
+					if(data.length > 0) {
+						func_update.call(self);
+					} else {
+						// create using $setOnInsert
+						if(args[1].$setOnInsert !== undefined) {
+							self.create(args[1].$setOnInsert, function(e, r) {
+								if(e) {
+									args[3](e, 0);
+								} else {
+									args[3](null, 1, r);
+								};
+							});
+						} else {
+							args[3]({
+								msg: 'can not find $setOnInsert'
+							}, 0);
+						};
+					};
+				});
+			} else {
+				func_update.call(self);
+			};
+			return;
 		},
 
 		'delete': function() {
