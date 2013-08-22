@@ -14,6 +14,7 @@ module.exports = function(instance) {
 		opt: {},
 
 		init: function(opt) {
+			var self = this;
 			opt === undefined ? opt = {} : null;
 			// init default value
 			_.each({
@@ -22,6 +23,15 @@ module.exports = function(instance) {
 			}, function(value, key) {
 				opt[key] === undefined ? opt[key] = value : null;
 			});
+			// opt.set: init pre process data
+			// if(_.isFunction(opt.set)) {
+				// var validate = this.validate;
+				// this.validate = function(data) {
+					// return opt.validate.call({
+						// _super: validate
+					// }, data);
+				// };
+			// };
 			// return
 			this.opt = opt;
 		},
