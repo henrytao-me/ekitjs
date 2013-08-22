@@ -288,7 +288,10 @@ module.exports = function(instance, def) {
 
 						// callback & reset loop_injection
 						var success = function() {
-							self.___loop_injection = false;
+							try{
+								self.___loop_injection = false;
+								delete self.___loop_injection;	
+							}catch(ex){};							
 							callback.call(self, data);
 						};
 
@@ -300,11 +303,17 @@ module.exports = function(instance, def) {
 							keyData[value._id] = value;
 						});
 
-						// get hide fields
+						// get hide & show fields
+						var isQueryHide = null;
+						var show_fields = [];
 						var hidden_fields = [];
 						_.each(fields, function(value, key) {
 							if(value === 0) {
 								hidden_fields.push(key);
+								isQueryHide = true;
+							}else if(value === 1){
+								show_fields.push(key);
+								isQueryHide = false;
 							};
 						});
 						
@@ -327,11 +336,25 @@ module.exports = function(instance, def) {
 								delete funcs[key];
 								return;
 							};
-							_.each(hidden_fields, function(field) {
-								if(key.indexOf(field) === 0) {
+							if(isQueryHide === true){
+								// remove function field in hidden_fields
+								_.each(hidden_fields, function(field) {
+									if(key.indexOf(field) === 0) {
+										delete funcs[key];
+									}
+								});	
+							}else if(isQueryHide === false){
+								// remove function field not in show_fields
+								var isIn = false;
+								_.each(show_fields, function(field){
+									if(key.indexOf(field) === 0){
+										isIn = true;
+									};
+								});
+								if(!isIn){
 									delete funcs[key];
-								}
-							});
+								};
+							};							
 						});
 
 						// sort funcs by sequence
@@ -364,16 +387,21 @@ module.exports = function(instance, def) {
 								};
 							})(func, key, opt));
 						});
-						(function(sequence) {
-							var args = arguments;
-							if(sequence.length === 0) {
-								return;
-							};
-							var func = sequence.shift();
-							func(function() {
-								args.callee(sequence);
-							});
-						})(sequence);
+						
+						if(sequence.length === 0){
+							success();
+						}else{
+							(function(sequence) {
+								var args = arguments;
+								if(sequence.length === 0) {
+									return;
+								};
+								var func = sequence.shift();
+								func(function() {
+									args.callee(sequence);
+								});
+							})(sequence);	
+						};
 					};
 				});
 			});
