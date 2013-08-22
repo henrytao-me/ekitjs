@@ -182,18 +182,22 @@ module.exports = function(instance, def) {
 			args.push(function(err, result) {
 				callback.call(self, err, result);
 			});
-			// validate args
-			try {
-				args[0] = this.create_validate(args[0]);
-			} catch(ex) {
-				log.log({
-					func: 'create',
-					args: JSON.stringify(arguments),
-					ex: ex
-				});
-				callback.call(self, ex, null);
-				return;
+			// check force = true (pass the validator)
+			if(args[1].force !== true){
+				// validate args
+				try {
+					args[0] = this.create_validate(args[0]);
+				} catch(ex) {
+					log.log({
+						func: 'create',
+						args: JSON.stringify(arguments),
+						ex: ex
+					});
+					callback.call(self, ex, null);
+					return;
+				};	
 			};
+			delete args[1].force;
 			// execute
 			this.getCollection(function(collection) {
 				collection.insert.apply(collection, args);
@@ -220,12 +224,23 @@ module.exports = function(instance, def) {
 					fields = args[key].fields;
 				};
 			});
+			// force
+			var force = false;
+			_.each(args, function(arg){
+				if(_.isObject(arg) && !_.isArray(arg)){
+					force = arg.force === true ? true : false;
+				};
+			});
 			// find
 			this.getCollection(function(collection) {
 				collection.find.apply(collection, args).toArray(function(err, data) {
 					if(err) {
 						return callback.call(self, err, []);
 					} else {
+						// check force = true (pass all function field)
+						if(force === true){
+							return callback.call(self, null, data);
+						};
 						/*
 						* init function field (store === false)
 						*/
@@ -372,10 +387,18 @@ module.exports = function(instance, def) {
 					callback.call(self, null, result, extra);
 				};
 			});
-			// init full args
+			// init full args (4 items)
 			if(args.length === 3) {
 				args[3] = args[2];
 				args[2] = {};
+			};
+			// check force = true (pass all volidator)
+			if(args[2].force === true){
+				// start update
+				this.getCollection(function(collection) {
+					collection.update.apply(collection, args);
+				});
+				return;
 			};
 			// normal update
 			var func_update = function() {
