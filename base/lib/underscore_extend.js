@@ -31,6 +31,17 @@ _.each = function(list, iterator, context) {
 };
 
 /*
+ * isObject (remove isArray)
+ */
+
+_.___isObject = _.isObject;
+_.isObject = function(value, excludeArray) {
+	if(excludeArray === true) {
+		return _.___isObject(value) && !_.isArray(value) ? true : false;
+	};
+	return _.___isObject(value);
+}
+/*
  * Get & Set Object
  */
 
@@ -46,29 +57,29 @@ _.getObject = function(obj, key) {
 
 _.setObject = function(obj, vals, force) {
 	force === undefined ? force = false : null;
-	try{
-		_.each(vals, function(value, keys){
-			(function(obj, keys, value){
+	try {
+		_.each(vals, function(value, keys) {
+			(function(obj, keys, value) {
 				var first = keys.shift();
-				if(keys.length === 0){
+				if(keys.length === 0) {
 					// if unmatch structure
-					if(_.isObject(obj[first]) && !_.isArray(obj[first])){
+					if(_.isObject(obj[first]) && !_.isArray(obj[first])) {
 						throw {
 							func: 'setObject',
 							msg: 'unmatch structure'
 						};
 					};
 					// if override
-					if(force || obj[first] === undefined){
-						obj[first] = value;	
-					};	
-				}else{
+					if(force || obj[first] === undefined) {
+						obj[first] = value;
+					};
+				} else {
 					// if obj first is null
-					if(obj[first] === undefined){
+					if(obj[first] === undefined) {
 						obj[first] = {};
 					};
 					// if unmatch stucture
-					if(!(_.isObject(obj[first]) && !_.isArray(obj[first]))){
+					if(!(_.isObject(obj[first]) && !_.isArray(obj[first]))) {
 						throw {
 							func: 'setObject',
 							msg: 'unmatch structure'
@@ -77,8 +88,8 @@ _.setObject = function(obj, vals, force) {
 					arguments.callee(obj[first], keys, value);
 				};
 			})(obj, keys.split('.'), value);
-		});	
-	}catch(ex){
+		});
+	} catch(ex) {
 		return false;
 	};
 	return true;
@@ -89,16 +100,17 @@ _.setObject = function(obj, vals, force) {
  */
 _.initCallback = function(args, callback) {
 	var res = [];
-	callback === undefined ? callback = function(){} : null;
+	callback === undefined ? callback = function() {
+	} : null;
 	try {
 		var isHas = false;
-		_.each(args, function(value, key, list, opt){
+		_.each(args, function(value, key, list, opt) {
 			res.push(value);
-			if(opt.isLast === true && _.isFunction(value) === true){
+			if(opt.isLast === true && _.isFunction(value) === true) {
 				isHas = true;
 			};
 		});
-		if(isHas !== true){
+		if(isHas !== true) {
 			res.push(callback);
 		};
 	} catch(ex) {
@@ -116,21 +128,21 @@ _.initCallback = function(args, callback) {
  * });
  * console.log(tmp);
  */
-_.sortObject = function(list, iterator, context){
-	if(_.isArray(list)){
+_.sortObject = function(list, iterator, context) {
+	if(_.isArray(list)) {
 		list.sort(function(a, b) {
 			return iterator.call(context, a, b);
 		});
-	}else{
+	} else {
 		var new_list = [];
 		var type = 'auto';
-		_.each(list, function(value, key){
+		_.each(list, function(value, key) {
 			new_list.push({
 				key: key,
 				value: value
 			});
 		});
-		_.sortObject(new_list, function(a, b){
+		_.sortObject(new_list, function(a, b) {
 			return iterator(a.value, b.value);
 		}, context);
 		// renew list with new_list
@@ -143,32 +155,32 @@ _.sortObject = function(list, iterator, context){
 	};
 };
 
-/* 
+/*
  * Encode Object
  * obj = {a: {b: b}, c: c} => obj = {'a.b': b, 'c': c}
  */
-_.encodeObject = function(object, objKey){
+_.encodeObject = function(object, objKey) {
 	var res = {};
-	(function(res, object, prefix){
+	(function(res, object, prefix) {
 		var callback = arguments.callee;
-		_.each(object, function(value, key){
+		_.each(object, function(value, key) {
 			var isObject = false;
-			if(_.isObject(value) && !_.isArray(value)){
-				if(value[objKey] === undefined){
+			if(_.isObject(value) && !_.isArray(value)) {
+				if(value[objKey] === undefined) {
 					isObject = true;
 				};
 			};
 			//
-			if(isObject && !_.isArray(value)){
-				if(prefix === undefined){
+			if(isObject && !_.isArray(value)) {
+				if(prefix === undefined) {
 					callback(res, value, key);
-				}else{
+				} else {
 					callback(res, value, [prefix, key].join('.'));
 				};
-			}else{
-				if(prefix === undefined){
+			} else {
+				if(prefix === undefined) {
 					res[key] = value;
-				}else{
+				} else {
 					res[[prefix, key].join('.')] = value;
 				};
 			};
@@ -177,13 +189,13 @@ _.encodeObject = function(object, objKey){
 	return res;
 };
 
-/* 
+/*
  * Decode Object
  */
 
-_.decodeObject = function(object){
+_.decodeObject = function(object) {
 	var res = {};
-	if(_.setObject(res, object) === false){
+	if(_.setObject(res, object) === false) {
 		return null;
 	};
 	return res;

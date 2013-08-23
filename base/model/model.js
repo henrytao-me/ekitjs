@@ -1,4 +1,5 @@
 var path = require('path');
+var ObjectId = require('mongodb').ObjectID;
 
 module.exports = function(instance, def) {
 
@@ -115,13 +116,18 @@ module.exports = function(instance, def) {
 		create_validate: function(args) {
 			// check default & require value
 			_.each(this._column, function(column, name) {
-				args[name] = column.validate(args[name]);
+				if(column.__type === 'array') {
+					args[name] = column.require(args[name], false);
+					args[name] = column.validate(args[name], false);
+				} else {
+					args[name] = column.require(args[name]);
+					args[name] = column.validate(args[name]);
+				};
 			});
 			// remove all undefined property
 			_.each(args, function(value, key) {
-				if(value === undefined) {
-					delete args[key];
-				};
+				value === undefined ?
+				delete args[key] : null;
 			});
 			// return
 			return args;
@@ -183,7 +189,7 @@ module.exports = function(instance, def) {
 				callback.call(self, err, result);
 			});
 			// check force = true (pass the validator)
-			if(args[1].force !== true){
+			if(args[1].force !== true) {
 				// validate args
 				try {
 					args[0] = this.create_validate(args[0]);
@@ -195,7 +201,7 @@ module.exports = function(instance, def) {
 					});
 					callback.call(self, ex, null);
 					return;
-				};	
+				};
 			};
 			delete args[1].force;
 			// execute
@@ -224,10 +230,17 @@ module.exports = function(instance, def) {
 					fields = args[key].fields;
 				};
 			});
+			// check _id field in query
+			_.each(args[0], function(value, key) {
+				try {
+					key === '_id' ? args[0][key] = new ObjectId(value) : null;
+				} catch(ex) {
+				};
+			});
 			// force
 			var force = false;
-			_.each(args, function(arg){
-				if(_.isObject(arg) && !_.isArray(arg)){
+			_.each(args, function(arg) {
+				if(_.isObject(arg) && !_.isArray(arg)) {
 					force = arg.force === true ? true : false;
 				};
 			});
@@ -238,7 +251,7 @@ module.exports = function(instance, def) {
 						return callback.call(self, err, []);
 					} else {
 						// check force = true (pass all function field)
-						if(force === true){
+						if(force === true) {
 							return callback.call(self, null, data);
 						};
 						/*
@@ -393,7 +406,7 @@ module.exports = function(instance, def) {
 				args[2] = {};
 			};
 			// check force = true (pass all volidator)
-			if(args[2].force === true){
+			if(args[2].force === true) {
 				// start update
 				this.getCollection(function(collection) {
 					collection.update.apply(collection, args);

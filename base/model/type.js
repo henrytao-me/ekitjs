@@ -23,15 +23,6 @@ module.exports = function(instance) {
 			}, function(value, key) {
 				opt[key] === undefined ? opt[key] = value : null;
 			});
-			// opt.set: init pre process data
-			// if(_.isFunction(opt.set)) {
-				// var validate = this.validate;
-				// this.validate = function(data) {
-					// return opt.validate.call({
-						// _super: validate
-					// }, data);
-				// };
-			// };
 			// return
 			this.opt = opt;
 		},
@@ -40,29 +31,26 @@ module.exports = function(instance) {
 			return this.opt[key];
 		},
 
-		checkDataType: function(data) {
-			return true;
-		},
-
-		validate: function(data) {
+		require: function(data) {// check require value & default value
 			if(this.get('require') === true && data === undefined) {
 				if(this.get('def') === undefined) {
 					throw {
 						msg: 'require value',
 						field: this.__name,
-						define_type: this.__type
+						define_type: this.__type,
+						input_data: data
 					};
 				} else {
 					data = this.get('def');
 				};
 			};
-			if(!this.checkDataType(data)) {
-				throw {
-					msg: 'invalid datatype',
-					field: this.__name,
-					define_type: this.__type,
-					input_data: data
-				};
+			return data;
+		},
+
+		validate: function(data) {// check data type
+			// opt.set: init pre process data
+			if(_.isFunction(this.get('set'))) {
+				return this.get('set').call(data);
 			};
 			return data;
 		}
@@ -98,7 +86,11 @@ module.exports = function(instance) {
 			};
 		},
 
-		validate: function(data, type) {
+		require: function(data) {
+			return undefined;
+		},
+
+		validate: function(data) {
 			return undefined;
 		}
 	});
@@ -113,24 +105,21 @@ module.exports = function(instance) {
 			this._super();
 		},
 
-		checkDataType: function(data) {
+		require: function(data) {
 			data === undefined ? data = {} : null;
-			if(!(_.isObject(data) && !_.isArray(data))) {
-				return false;
-			};
-			for(var i in this._column) {
-				if(!this._column[i].checkDataType(data[i])) {
-					return false;
-				};
-			};
-			return true;
+			_.each(this._column, function(column, name) {
+				data[name] = column.require(data[name]);
+				data[name] === undefined ?
+				delete data[name] : null;
+			});
+			return data;
 		},
 
 		validate: function(data) {
 			data === undefined ? data = {} : null;
-			if(!this.checkDataType(data)) {
+			if(!_.isObject(data, true)) {
 				throw {
-					msg: 'invalid datatype',
+					msg: 'validate value',
 					field: this.__name,
 					define_type: this.__type,
 					input_data: data
@@ -138,18 +127,9 @@ module.exports = function(instance) {
 			};
 			_.each(this._column, function(column, name) {
 				data[name] = column.validate(data[name]);
+				data[name] === undefined ?
+				delete data[name] : null;
 			});
-			// remove all undefined data
-			data = _.encodeObject(data);
-			_.each(data, function(value, key) {
-				if(value === undefined) {
-					delete data[key];
-				};
-			});
-			data = _.decodeObject(data);
-			if(_.keys(data).length === 0) {
-				data = undefined;
-			}
 			return data;
 		},
 
@@ -179,35 +159,47 @@ module.exports = function(instance) {
 			this._super();
 		},
 
-		checkDataType: function(data) {
-			data === undefined ? data = [] : null;
-			if(!_.isArray(data)) {
-				return false;
-			};
-			for(var i in data) {
-				if(!this._element.checkDataType(data[i])) {
-					return false;
+		require: function(data, isElement) {
+			var self = this;
+			isElement === undefined ? isElement = true : false;
+			if(isElement === true) {
+				data = self._element.require(data);
+			} else {
+				data === undefined ? data = [] : null;
+				if(!_.isArray(data)) {
+					throw {
+						msg: 'validate array stucture',
+						field: this.__name,
+						define_type: this.__type,
+						input_data: data
+					};
 				};
+				_.each(data, function(v, k) {
+					data[k] = self._element.require(v);
+				});
 			};
-			return true;
+			return data;
 		},
 
-		validate: function(data, type) {
-			data === undefined ? data = [] : null;
-			if(!this.checkDataType(data)) {
-				throw {
-					msg: 'invalid datatype',
-					field: this.__name,
-					define_type: this.__type,
-					input_data: data
+		validate: function(data, isElement) {
+			var self = this;
+			isElement === undefined ? isElement = true : false;
+			if(isElement === true) {
+				data = self._element.validate(data);
+			} else {
+				data === undefined ? data = [] : null;
+				if(!_.isArray(data)) {
+					throw {
+						msg: 'validate array stucture',
+						field: this.__name,
+						define_type: this.__type,
+						input_data: data
+					};
 				};
+				_.each(data, function(v, k) {
+					data[k] = self._element.validate(v);
+				});
 			};
-			for(var i in data) {
-				data[i] = this._element.validate(data[i]);
-			};
-			if(data.length === 0) {
-				data = undefined;
-			}
 			return data;
 		}
 	});
