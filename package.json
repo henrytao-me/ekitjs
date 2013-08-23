@@ -1,7 +1,7 @@
 {
-	"name": "ekitjs",
-	"description": "EkitJS Framework for Awesome Web Development with Javascript in NodeJS.",
-	"homepage": "http://ekitjs.com",
+	"name": "EkitJS",
+	"description": "EkitJS - An elegant web framework is built on top of expressjs + mongodb native driver + more..., aims to reduce web development lifecycle, effective in collaboration and reusable code.",
+	"homepage": "https://github.com/henrytao-me/ekitjs",
 	"keywords": ["ekitjs", "web", "javascript", "module", "mvc", "mongodb"],
 	"author": {
 		"name": "Henry Tao",
