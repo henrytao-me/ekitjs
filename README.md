@@ -4,7 +4,7 @@ EkitJS - An elegant web framework is built on the top of expressjs + mongodb nat
 
 ## Principle & Term
 
-EkitJS is a web framework is built on the top of orther basic NodeJS modules. So, it does not require any new coding syntax. What we are doing is reorganize the coding structure and propose the new way to help web development easier, faster and more collaborate. The mind-set is really important. Here are list of things you need to keep in mind before starting with EkitJS (Dont'w worry, it is pretty easy!):
+EkitJS is a web framework is built on the top of orther basic NodeJS modules. So, it does not require any new coding syntax. What we are doing is reorganize the coding structure and propose the new way to help web development easier, faster and more collaborate. The mind-set is really important. Here are list of things you need to keep in mind before starting with EkitJS (Dont's worry, it is pretty easy!):
 
 1. By default: EkitJS = expressJS + ejs + ekit-dir + mongodb + underscore + (mind-set).
 2. EkitJS is the combination between Module-Based and MVC Model. This means we have the module on the top of the application. In each module, we have MVC Model. 
