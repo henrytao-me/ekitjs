@@ -23,6 +23,17 @@ module.exports = function(instance) {
 			}, function(value, key) {
 				opt[key] === undefined ? opt[key] = value : null;
 			});
+			// init extend validate
+			if(_.isFunction(opt.validate)){
+				var validate = this.validate;
+				this.validate = function(data){
+					return opt.validate.call({
+						_super: function(data){
+							return validate(data);
+						}
+					}, data);
+				};
+			};
 			// return
 			this.opt = opt;
 		},
@@ -48,10 +59,6 @@ module.exports = function(instance) {
 		},
 
 		validate: function(data) {// check data type
-			// opt.set: init pre process data
-			if(_.isFunction(this.get('set'))) {
-				return this.get('set').call(data);
-			};
 			return data;
 		}
 	});
