@@ -6,7 +6,7 @@ GLOBAL._ = require('underscore');
  */
 
 _.___each = _.each;
-_.each = function(list, iterator, context) {
+_.each = function(list, iterator, context, self) {
 	// extend to check last
 	var n = 0;
 	var i = 0;
@@ -22,7 +22,7 @@ _.each = function(list, iterator, context) {
 	};
 	var func = function(value, key, list) {
 		i++;
-		iterator(value, key, list, {
+		iterator.call(self, value, key, list, {
 			index: i - 1,
 			isLast: i >= n ? true : false
 		});

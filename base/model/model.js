@@ -133,7 +133,65 @@ module.exports = function(instance, def) {
 			return args;
 		},
 
-		update_validate: function(selector, document, options) {
+		check_update_key: function(key) {
+			var res = null;
+			var keys = [];
+			_.each(key.split('.'), function(v) {
+				if(v === '$') {
+					var tmp = keys.pop();
+					tmp = [tmp, '$'].join('.');
+					keys.push(tmp);
+				} else {
+					keys.push(v);
+				};
+			});
+			(function(column, keys, obj) {
+				var k = keys.shift();
+				if(k === undefined) {
+					res = obj;
+					return;
+				};
+				var isArray = false;
+				if(k.indexOf('.$') >= 0) {
+					isArray = true;
+					k = k.replace('.$', '');
+				};
+				if(column[k] === undefined) {
+					return;
+				} else {
+					if((column[k].__type !== 'array' && isArray === true)) {
+						throw {
+							msg: 'invalid structure',
+							field: column[k].__name,
+							type: column[k].__type,
+							input_key: key
+						};
+					};
+					switch(column[k].__type) {
+					case 'object':
+						arguments.callee(column[k]._column, keys, column[k]);
+						break;
+					case 'array':
+						arguments.callee(column[k]._element, keys, column[k]);
+						break;
+					case 'auto':
+						res = column[k];
+						break;
+					default:
+						throw {
+							msg: 'invalid structure',
+							field: column[k].__name,
+							type: column[k].__type,
+							input_key: key,
+						};
+						break;
+					};
+				};
+			})(this._column, keys, null);
+			return res
+		},
+
+		update_validate: function(args) {
 			var log = this;
 			var self = this;
 			var columns = this._column;
@@ -143,18 +201,26 @@ module.exports = function(instance, def) {
 			// $inc: don't need to check datatype
 
 			// $rename: doesn't support
-			if(document.$rename) {
+			if(args.$rename) {
 				throw {
 					msg: "ekitjs doesn't support $rename"
 				};
 			};
 
-			// $setOnInsert: use on upsert, check when create
+			// $setOnInsert: use on upsert, check update function
 
-			// $set: don't know how to check datatype yet. It's too complicated. I trust you.
+			// $set: check object update and $ for array
+			if(args.$set) {
+				_.each(args.$set, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						args.$set[key] = column.validate(value);
+					};
+				}, undefined, this);
+			};
 
 			// $unset: doesn't support
-			if(document.$unset) {
+			if(args.$unset) {
 				throw {
 					msg: "ekitjs doesn't support $unset"
 				};
@@ -164,19 +230,144 @@ module.exports = function(instance, def) {
 			* array query
 			*/
 
-			// $addToSet: I trust you.
+			// $addToSet:
+			if(args.$addToSet) {
+				_.each(args.$addToSet, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						if(column.__type !== 'array') {
+							throw {
+								msg: '$addToSet not an array field',
+								field: column.__name,
+								type: column.__type,
+								input_key: key,
+							};
+						};
+						// check multi input with $each
+						var isEach = false;
+						if(_.isObject(value, true)) {
+							if(value.$each !== undefined) {
+								isEach = true;
+							};
+						};
+						if(isEach === true) {
+							_.each(value.$each, function(v, k) {
+								args.$addToSet[key].$each[k] = column.validate(v);
+							});
+						} else {
+							args.$addToSet[key] = column.validate(value);
+						};
+					};
+				}, undefined, this);
+			};
 
-			// $pop: I trust you.
+			// $pop
+			if(args.$pop) {
+				_.each(args.$pop, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						if(column.__type !== 'array') {
+							throw {
+								msg: '$pop not an array field',
+								field: column.__name,
+								type: column.__type,
+								input_key: key,
+							};
+						};
+					};
+				}, undefined, this);
+			};
 
-			// $pullAll: I trust you.
+			// $pullAll
+			if(args.$pullAll) {
+				_.each(args.$pullAll, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						if(column.__type !== 'array') {
+							throw {
+								msg: '$pullAll not an array field',
+								field: column.__name,
+								type: column.__type,
+								input_key: key,
+							};
+						};
+						_.each(value, function(v, k) {
+							args.$pullAll[key][k] = column.validate(v);
+						});
+					};
+				}, undefined, this);
+			};
 
-			// $pull: I trust you.
+			// $pull
+			if(args.$pull) {
+				_.each(args.$pull, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						if(column.__type !== 'array') {
+							throw {
+								msg: '$pull not an array field',
+								field: column.__name,
+								type: column.__type,
+								input_key: key,
+							};
+						};
+						args.$pull[key] = column.validate(value);
+					};
+				}, undefined, this);
+			};
 
-			// $pushAll: I trust you.
+			// $pushAll
+			if(args.$pushAll) {
+				_.each(args.$pushAll, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						if(column.__type !== 'array') {
+							throw {
+								msg: '$pushAll not an array field',
+								field: column.__name,
+								type: column.__type,
+								input_key: key,
+							};
+						};
+						_.each(value, function(v, k) {
+							args.$pushAll[key][k] = column.validate(v);
+						});
+					};
+				}, undefined, this);
+			};
 
-			// $push: I trust you.
+			// $push
+			if(args.$push) {
+				_.each(args.$push, function(value, key) {
+					var column = this.check_update_key(key);
+					if(column !== null) {
+						if(column.__type !== 'array') {
+							throw {
+								msg: '$push not an array field',
+								field: column.__name,
+								type: column.__type,
+								input_key: key,
+							};
+						};
+						// check multi input with $each
+						var isEach = false;
+						if(_.isObject(value, true)) {
+							if(value.$each !== undefined) {
+								isEach = true;
+							};
+						};
+						if(isEach === true) {
+							_.each(value.$each, function(v, k) {
+								args.$push[key].$each[k] = column.validate(v);
+							});
+						} else {
+							args.$push[key] = column.validate(value);
+						};
+					};
+				}, undefined, this);
+			};
 
-			return true;
+			return args;
 		},
 
 		create: function() {
@@ -420,7 +611,7 @@ module.exports = function(instance, def) {
 					// remove $setOnInsert
 					delete args[1].$setOnInsert;
 					// start validate
-					this.update_validate(args[0], args[1], args[2]);
+					args[1] = this.update_validate(args[1]);
 				} catch(ex) {
 					log.log({
 						func: 'update',
