@@ -20,14 +20,16 @@ module.exports = function(instance, def, app) {
 			// reset addons_path
 			this.addons_path = {};
 			// collect addons
-			_.each(def.config.addons_path, function(addon_path) {
-				_.each(ekit_dir.subdirs(path.join(def.root_path, addon_path)), function(addon_name) {
-					if(res[addon_name] === undefined) {
-						res[addon_name] = path.join(def.root_path, addon_path, addon_name);
-					} else {
-						throw 'Duplicate addon name: <' + addon_name + '> in: <' + res[addon_name] + '> & <' + path.join(def.root_path, addon_path, addon_name) + '>';
-					};
-				});
+			_.each([def.config.addons_path, def.config.addons_dev], function(addons_path){
+				_.each(addons_path, function(addon_path) {
+					_.each(ekit_dir.subdirs(path.join(def.root_path, addon_path)), function(addon_name) {
+						if(res[addon_name] === undefined) {
+							res[addon_name] = path.join(def.root_path, addon_path, addon_name);
+						} else {
+							throw 'Duplicate addon name: <' + addon_name + '> in: <' + res[addon_name] + '> & <' + path.join(def.root_path, addon_path, addon_name) + '>';
+						};
+					});
+				});	
 			});
 			return res;
 		},

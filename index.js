@@ -134,7 +134,6 @@ exports.start = function(callback) {
 						};
 					})(controller, route.callback));
 				}else{
-					console.log(route);
 					app[route.method](route.url, (function(obj, callback){
 						return function(req, res, next){
 							callback.call(obj, req, res, next);
