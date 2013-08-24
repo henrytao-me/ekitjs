@@ -13,6 +13,13 @@ var def = {
 var instance = {
 	Class: null,
 	base: {},
+	get: function(path_name){
+		var res = path.basename(path_name);
+		if(['Class', 'base', 'get'].indexOf(res) < 0){
+			return instance[res];	
+		};
+		return null;
+	},
 	test: {}
 };
 
@@ -98,7 +105,7 @@ exports.start = function(callback) {
 	});
 
 	// init routing - controller
-	var excludes = ['Class', 'base'];
+	var excludes = ['Class', 'base', 'get'];
 	_.each(instance, function(addons, addon_group){
 		if(_.indexOf(excludes, addon_group) > -1){
 			return;
@@ -127,6 +134,7 @@ exports.start = function(callback) {
 						};
 					})(controller, route.callback));
 				}else{
+					console.log(route);
 					app[route.method](route.url, (function(obj, callback){
 						return function(req, res, next){
 							callback.call(obj, req, res, next);

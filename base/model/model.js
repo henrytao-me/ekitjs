@@ -9,6 +9,8 @@ module.exports = function(instance, def) {
 
 		},
 		_index: null,
+		_private: [],
+		_public: [],
 
 		_collection: null,
 		_db: null,
@@ -79,6 +81,23 @@ module.exports = function(instance, def) {
 			};
 			// call super
 			this._super.apply(this, arguments);
+		},
+		
+		isPublic: function(method_name){
+			if(!_.isFunction(this[method_name]) || this._public === false){
+				return false;
+			};
+			this._public === true ? this._public = [] : null;
+			if(this._public.length === 0){// public is default
+				if(this._private.indexOf(method_name) < 0){
+					return true;
+				};
+			}else{
+				if(this._public.indexOf(method_name) >= 0){
+					return true;
+				};
+			};
+			return false;
 		},
 
 		getCollection: function(callback) {

@@ -30,7 +30,7 @@ module.exports = function(instance) {
 				res = new res();
 				res.__name = model_name;
 			} catch(ex) {
-
+				return null;
 			};
 			return res;
 		},
