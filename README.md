@@ -2,6 +2,8 @@
 
 EkitJS - An elegant web framework is built on the top of expressjs + mongodb native driver + more..., aims to reduce web development lifecycle, effective in collaboration and reusable code.
 
+## Current Stage: Concept
+
 ## Principle & Term
 
 EkitJS is a web framework is built on the top of orther basic NodeJS modules. So, it does not require any new coding syntax. What we are doing is reorganize the coding structure and propose the new way to help web development easier, faster and more collaborate. The mind-set is really important. Here are list of things you need to keep in mind before starting with EkitJS (Dont's worry, it is pretty easy!):
