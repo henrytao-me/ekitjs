@@ -10,11 +10,12 @@
 	"main": "index.js",
 	"version": "0.1.2",
 	"dependencies": {
-		"ejs": "*",
+		"ejs": "0.8.4",
 		"ekit-dir": "*",
-		"express": "3.3.2",
-		"mongodb": "*",
-		"underscore": "*"		
+		"express": "3.3.5",
+		"mongodb": "1.3.19",
+		"underscore": "1.5.1",
+		"socket.io": "0.9.16"		
 	},
 	"license": "MIT",
 	"readme": "",
