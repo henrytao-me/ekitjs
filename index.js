@@ -4,20 +4,22 @@ var fs = require('fs');
 
 var app = express();
 var server = require('http').createServer(app);
-var io = require('socket.io').listen(server);
+var io = require('socket.io').listen(server, {
+	log: false
+});
 var def = {
 	asset: null,
 	config: JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8')),
 	db: null,
-	root_path: path.join(__dirname, '..', '..')	
+	root_path: path.join(__dirname, '..', '..')
 };
 var instance = {
 	Class: null,
 	base: {},
-	get: function(path_name){
+	get: function(path_name) {
 		var res = path.basename(path_name);
-		if(['Class', 'base', 'get'].indexOf(res) < 0){
-			return instance[res];	
+		if(['Class', 'base', 'get'].indexOf(res) < 0) {
+			return instance[res];
 		};
 		return null;
 	},
@@ -61,7 +63,7 @@ exports.start = function(callback) {
 	if(app.get('env') === 'production') {
 		// TODO
 	};
-	
+
 	/*
 	 *
 	 * setup mongoose
@@ -87,32 +89,32 @@ exports.start = function(callback) {
 	def.asset = require(path.join(__dirname, 'base', 'lib', 'asset.js'));
 
 	/*
-	 *
-	 * init ekit app
-	 *
-	 */
-	
+	*
+	* init ekit app
+	*
+	*/
+
 	// load base model to instance
 	_.each(['Class', 'base', 'type', 'types', 'controller', 'model', 'addon'], function(value) {
 		require(path.join(__dirname, './base/model/', value))(instance, def, app, server, io);
 	});
-	
+
 	// init addon manager
 	var addon = new instance.base.addon();
-	
+
 	// init static directory
-	_.each(addon.addons, function(addon_path, addon_name){
+	_.each(addon.addons, function(addon_path, addon_name) {
 		app.use(path.join('/', addon_name, 'static'), express.static(path.join(addon_path, 'static')));
 	});
 
 	// init routing - controller
 	var excludes = ['Class', 'base', 'get'];
-	_.each(instance, function(addons, addon_group){
-		if(_.indexOf(excludes, addon_group) > -1){
+	_.each(instance, function(addons, addon_group) {
+		if(_.indexOf(excludes, addon_group) > -1) {
 			return;
-		};		
-		_.each(addons, function(controller, controller_name){
-			if(controller.__type !== 'controller'){
+		};
+		_.each(addons, function(controller, controller_name) {
+			if(controller.__type !== 'controller') {
 				return;
 			};
 			// create controller instance
@@ -120,8 +122,8 @@ exports.start = function(callback) {
 			// set controller name
 			controller.__name = [addon_group, controller_name].join('.');
 			// get routing
-			_.each(controller.export(), function(route){
-				if(route.url === '*'){
+			_.each(controller.export(), function(route) {
+				if(route.url === '*') {
 					app.use((function(obj, callback) {
 						return function(req, res, next) {
 							// split request path
@@ -134,9 +136,9 @@ exports.start = function(callback) {
 							callback.call(obj, req, res, next);
 						};
 					})(controller, route.callback));
-				}else{
-					app[route.method](route.url, (function(obj, callback){
-						return function(req, res, next){
+				} else {
+					app[route.method](route.url, (function(obj, callback) {
+						return function(req, res, next) {
 							callback.call(obj, req, res, next);
 						};
 					})(controller, route.callback));
@@ -156,9 +158,9 @@ exports.start = function(callback) {
 	};
 
 	/*
-	 * 
+	 *
 	 * start server
-	 * 
+	 *
 	 */
 
 	server.listen(app.get('port'), function() {
