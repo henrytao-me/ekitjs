@@ -1,7 +1,7 @@
 var path = require('path');
 var ekit_dir = require('ekit-dir');
 
-module.exports = function(instance, def, app) {
+module.exports = function(instance, def, app, server, io) {
 	var _class = {
 		
 		addons: {},
@@ -114,7 +114,7 @@ module.exports = function(instance, def, app) {
 				var config = require(addon_path).config || {};
 				// load addon model to instance
 				_.each(config.model || [], function(model) {
-					require(path.join(addon_path, model))(instance, def, app, instance.base.types);
+					require(path.join(addon_path, model))(instance, def, app, server, io);
 				});
 				// load css & js
 				_.each(['css', 'js'], function(type) {

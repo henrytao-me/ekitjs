@@ -201,3 +201,21 @@ _.decodeObject = function(object) {
 	return res;
 };
 
+/*
+ * Success function, deal with multiple callback
+ */
+_.success = function(n, func, obj) {
+	var success = function(n, func, obj) {
+		count = 0;
+		this.success = function() {
+			count++;
+			if(count < n){
+				return;
+			};
+			if(_.isFunction(func)){
+				func.call(obj);
+			};
+		};
+	};
+	return new success(n, func, obj);
+};

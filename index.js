@@ -1,14 +1,15 @@
 var express = require('express');
-var http = require('http');
 var path = require('path');
 var fs = require('fs');
 
 var app = express();
+var server = require('http').createServer(app);
+var io = require('socket.io').listen(server);
 var def = {
 	asset: null,
+	config: JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8')),
 	db: null,
-	root_path: path.join(__dirname, '..', '..'),
-	config: JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'))
+	root_path: path.join(__dirname, '..', '..')	
 };
 var instance = {
 	Class: null,
@@ -60,7 +61,7 @@ exports.start = function(callback) {
 	if(app.get('env') === 'production') {
 		// TODO
 	};
-
+	
 	/*
 	 *
 	 * setup mongoose
@@ -93,7 +94,7 @@ exports.start = function(callback) {
 	
 	// load base model to instance
 	_.each(['Class', 'base', 'type', 'types', 'controller', 'model', 'addon'], function(value) {
-		require(path.join(__dirname, './base/model/', value))(instance, def, app);
+		require(path.join(__dirname, './base/model/', value))(instance, def, app, server, io);
 	});
 	
 	// init addon manager
@@ -151,16 +152,16 @@ exports.start = function(callback) {
 	 */
 
 	if(_.isFunction(callback)) {
-		callback(instance, def, app);
+		callback(instance, def, app, server, io);
 	};
 
 	/*
-	 *
+	 * 
 	 * start server
-	 *
+	 * 
 	 */
-	
-	http.createServer(app).listen(app.get('port'), function() {
+
+	server.listen(app.get('port'), function() {
 		console.log('ekitjs server listening on port ' + app.get('port'));
 	});
 };

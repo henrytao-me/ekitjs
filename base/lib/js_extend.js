@@ -24,3 +24,4 @@ String.prototype.replaceAll = function(token, newToken, ignoreCase) {
 	}
 	return str;
 };
+
