@@ -46,6 +46,9 @@ _.isObject = function(value, excludeArray) {
  */
 
 _.getObject = function(obj, key) {
+	if(_.isArray(key)){
+		key = key.join('.');
+	};
 	// key is dot string
 	var res = undefined;
 	try {

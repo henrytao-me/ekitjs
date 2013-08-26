@@ -5,11 +5,15 @@ module.exports = function(instance) {
 	 * Quick type access
 	 */
 	
-	instance.base.types = {};
+	GLOBAL.types = instance.base.types = {};
 	
 	instance.base.types.refresh = function(){
 		// reset types value
-		instance.base.types = {};
+		_.each(instance.base.types, function(value, key){
+			if(key !== 'refresh'){
+				delete instance.base.types[key];
+			};
+		});
 		
 		// init types
 		_.each(instance.base.type, function(value, key){
@@ -22,10 +26,8 @@ module.exports = function(instance) {
 				};
 			})(value, key);
 		});
-		
-		// backup refresh
-		instance.base.types.refresh = arguments.callee;		
 	};
 	
 	instance.base.types.refresh();
+	
 };

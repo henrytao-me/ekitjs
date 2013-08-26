@@ -1,5 +1,3 @@
-var fs = require('fs');
-
 var data = {
 	css: {
 		urls: [],
@@ -55,6 +53,10 @@ exports.renderTags = function(type) {
 		res = urls + '<style type="text/css">' + files + '</style>';
 	} else if(type === 'js') {
 		res = urls + '<script type="text/javascript">' + files + '</script>';
-	}
+	};
 	return res;
+};
+
+exports.export = function(type){
+	return data[type];
 };

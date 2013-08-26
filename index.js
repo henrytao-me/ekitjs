@@ -1,18 +1,26 @@
-var express = require('express');
-var path = require('path');
-var fs = require('fs');
+console.log('');
+/*
+ * Static variable:
+ * Class, def, app, server, io, instance, types, path, fs
+ */
 
-var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io').listen(server, {
-	log: false
+var express = require('express');
+GLOBAL.path = require('path');
+GLOBAL.fs = require('fs');
+
+GLOBAL.app = express();
+GLOBAL.server = require('http').createServer(app);
+GLOBAL.io = require('socket.io').listen(server, {
+	log: true
 });
-var def = {
+GLOBAL.def = {
+	addon: null,
 	asset: null,
 	config: JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8')),
 	db: null,
 	root_path: path.join(__dirname, '..', '..')
 };
+GLOBAL.Class = null;
 var instance = {
 	Class: null,
 	base: {},
@@ -29,17 +37,20 @@ var instance = {
 // set function
 exports.set = function(key, value) {
 	switch(key) {
-	case 'config.json':
-		def.config = JSON.parse(fs.readFileSync(value, 'utf8'));
-		break;
 	case 'root_path':
 		def.root_path = value;
+		try {
+			def.config = JSON.parse(fs.readFileSync(path.join(def.root_path, 'config.json'), 'utf8'));
+		} catch(ex) {
+		};
 		break;
 	};
 };
 
 // start function
-exports.start = function(callback) {
+exports.start = function(root_path, callback) {
+
+	exports.set('root_path', root_path);
 
 	/*
 	 *
@@ -71,19 +82,20 @@ exports.start = function(callback) {
 	 */
 
 	var MongoClient = require('mongodb').MongoClient;
-	MongoClient.connect(def.config.mongo_connection_string, function(err, db) {
-		if(err)
-			throw err;
-		def.db = db;
-	});
-
+	if(def.config.mongo_connection_string !== null) {
+		MongoClient.connect(def.config.mongo_connection_string, function(err, db) {
+			if(err)
+				throw err;
+			def.db = db;
+		});
+	};
+	
 	/*
 	 *
 	 * init ekitjs lib
 	 *
 	 */
 
-	require(path.join(__dirname, 'base', 'lib', 'express_extend.js'))(app);
 	require(path.join(__dirname, 'base', 'lib', 'js_extend.js'));
 	require(path.join(__dirname, 'base', 'lib', 'underscore_extend.js'));
 	def.asset = require(path.join(__dirname, 'base', 'lib', 'asset.js'));
@@ -96,11 +108,17 @@ exports.start = function(callback) {
 
 	// load base model to instance
 	_.each(['Class', 'base', 'type', 'types', 'controller', 'model', 'addon'], function(value) {
-		require(path.join(__dirname, './base/model/', value))(instance, def, app, server, io);
+		require(path.join(__dirname, './base/base/', value))(instance);
 	});
+	GLOBAL.Class = instance.Class;
+	
+	// init socket.io
+	if(def.config['socket.io'] === true){
+		require(path.join(__dirname, './base/base/socket.io.js'))(instance);
+	};
 
 	// init addon manager
-	var addon = new instance.base.addon();
+	var addon = def.addon = new instance.base.addon();
 
 	// init static directory
 	_.each(addon.addons, function(addon_path, addon_name) {
@@ -113,7 +131,7 @@ exports.start = function(callback) {
 		if(_.indexOf(excludes, addon_group) > -1) {
 			return;
 		};
-		_.each(addons, function(controller, controller_name) {
+		_.each(addons.controller, function(controller, controller_name) {
 			if(controller.__type !== 'controller') {
 				return;
 			};
@@ -164,6 +182,7 @@ exports.start = function(callback) {
 	 */
 
 	server.listen(app.get('port'), function() {
-		console.log('ekitjs server listening on port ' + app.get('port'));
+		console.log('=> ekitjs server listening on port ' + app.get('port'));
+		console.log('');
 	});
 };

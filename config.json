@@ -1,7 +1,7 @@
 {
-	"addons_path": [],
-	"ews": true,
+	"addons_path": ["addons"],
 	"mongo_connection_string": "mongodb://127.0.0.1:27017/ekitjs",
 	"port": 3000,
+	"socket.io": true,
 	"view engine": "html"
 }

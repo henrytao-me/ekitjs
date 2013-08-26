@@ -1,7 +1,6 @@
-var path = require('path');
 var ObjectId = require('mongodb').ObjectID;
 
-module.exports = function(instance, def) {
+module.exports = function(instance) {
 
 	var __class = {
 		_name: 'unknow',
