@@ -8,14 +8,15 @@
 		"email": "hi@henrytao.me"
 	},
 	"main": "index.js",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"dependencies": {
 		"ejs": "0.8.4",
 		"ekit-dir": "*",
 		"express": "3.3.5",
 		"mongodb": "1.3.19",
 		"underscore": "1.5.1",
-		"socket.io": "0.9.16"		
+		"socket.io": "0.9.16",
+		"ekit-minify": "*"
 	},
 	"license": "MIT",
 	"readme": "",

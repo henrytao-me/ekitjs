@@ -1,5 +1,3 @@
-GLOBAL._ = require('underscore');
-
 /*
  * Extend each function
  * Support: isLast: boolean
@@ -14,7 +12,7 @@ _.each = function(list, iterator, context, self) {
 		if(_.isArray(list)) {
 			n = list.length;
 		};
-		if(_.isObject(list)) {
+		if(_.isObject(list, true)) {
 			n = Object.keys(list).length;
 		};
 	} catch(ex) {
@@ -31,22 +29,23 @@ _.each = function(list, iterator, context, self) {
 };
 
 /*
- * isObject (remove isArray)
+ * isObject (remove isArray & isFunction)
  */
 
 _.___isObject = _.isObject;
-_.isObject = function(value, excludeArray) {
-	if(excludeArray === true) {
-		return _.___isObject(value) && !_.isArray(value) ? true : false;
+_.isObject = function(value, onlyObject) {
+	if(onlyObject === true) {
+		return _.___isObject(value) && !_.isArray(value) && !_.isFunction(value) ? true : false;
 	};
 	return _.___isObject(value);
-}
+};
+
 /*
  * Get & Set Object
  */
 
 _.getObject = function(obj, key) {
-	if(_.isArray(key)){
+	if(_.isArray(key)) {
 		key = key.join('.');
 	};
 	// key is dot string
@@ -59,6 +58,9 @@ _.getObject = function(obj, key) {
 };
 
 _.setObject = function(obj, vals, force) {
+	if(!_.isObject(obj, true)) {
+		return false;
+	};
 	force === undefined ? force = false : null;
 	try {
 		_.each(vals, function(value, keys) {
@@ -66,7 +68,7 @@ _.setObject = function(obj, vals, force) {
 				var first = keys.shift();
 				if(keys.length === 0) {
 					// if unmatch structure
-					if(_.isObject(obj[first]) && !_.isArray(obj[first])) {
+					if(_.isObject(obj[first], true)) {
 						throw {
 							func: 'setObject',
 							msg: 'unmatch structure'
@@ -82,7 +84,7 @@ _.setObject = function(obj, vals, force) {
 						obj[first] = {};
 					};
 					// if unmatch stucture
-					if(!(_.isObject(obj[first]) && !_.isArray(obj[first]))) {
+					if(!(_.isObject(obj[first], true))) {
 						throw {
 							func: 'setObject',
 							msg: 'unmatch structure'
@@ -95,6 +97,17 @@ _.setObject = function(obj, vals, force) {
 	} catch(ex) {
 		return false;
 	};
+	return true;
+};
+
+_.mixObject = function(src, dest, force, objKey) {
+	if(!_.isObject(src, true)) {
+		return false;
+	};
+	if(!_.isObject(dest, true)) {
+		return false;
+	};
+	_.setObject(src, _.encodeObject(dest, objKey), force);
 	return true;
 };
 
@@ -161,20 +174,14 @@ _.sortObject = function(list, iterator, context) {
 /*
  * Encode Object
  * obj = {a: {b: b}, c: c} => obj = {'a.b': b, 'c': c}
+ * objKey is used when object is an instance from Class
  */
 _.encodeObject = function(object, objKey) {
 	var res = {};
 	(function(res, object, prefix) {
 		var callback = arguments.callee;
 		_.each(object, function(value, key) {
-			var isObject = false;
-			if(_.isObject(value) && !_.isArray(value)) {
-				if(value[objKey] === undefined) {
-					isObject = true;
-				};
-			};
-			//
-			if(isObject && !_.isArray(value)) {
+			if(_.isObject(value, true) && value[objKey] === undefined) {
 				if(prefix === undefined) {
 					callback(res, value, key);
 				} else {
@@ -212,10 +219,10 @@ _.success = function(n, func, obj) {
 		count = 0;
 		this.success = function() {
 			count++;
-			if(count < n){
+			if(count < n) {
 				return;
 			};
-			if(_.isFunction(func)){
+			if(_.isFunction(func)) {
 				func.call(obj);
 			};
 		};

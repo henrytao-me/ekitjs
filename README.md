@@ -1,8 +1,9 @@
 # EkitJS
 
-EkitJS - An elegant web framework is built on the top of expressjs + mongodb native driver + more..., aims to reduce web development lifecycle, effective in collaboration and reusable code.
+EkitJS - An elegant web framework is built on the top of expressjs + mongodb native driver + more..., aims to reduce web development lifecycle, effective in collaboration, reusable code and real time sync data from DB to Client. 
 
-## Current Stage: Concept
+## Current Stage: 
+* Developing. 
 
 ## Principle & Term
 
@@ -19,6 +20,8 @@ EkitJS is a web framework is built on the top of orther basic NodeJS modules. So
 * Support Schema Design in MongoDB based on defining Model.
 * Support auto check requirement field, data validation.
 * Support function field (trigger later). 
+* Real time stream and broadcast data from DB to Client using web socket. Inspired by Meteor & Derby concept.
+* Support all other NodeJS module on npm.
 
 ## Requirements
 
@@ -39,17 +42,9 @@ EkitJS is a web framework is built on the top of orther basic NodeJS modules. So
 
 3. Go to node_modules/ekitjs, copy config.json to your web application root folder.
 
-4. In your start script app.js, add this: 
+4. In your start script app.js, add single line of code to get start: 
 
-		var ekitjs = require('ekitjs');
-		var path = require('path');
-		
-		// set config file
-		ekitjs.set('root_path', __dirname);
-		ekitjs.set('config.json', path.join(__dirname, 'config.json'));
-	
-		// start server
-		ekitjs.start();
+		require('ekitjs').start(__dirname);
 
 5. Done! Enjoy! 
 
