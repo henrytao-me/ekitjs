@@ -15,11 +15,9 @@ instance.base.type.auto = Class.extend({
 		var self = this;
 		opt === undefined ? opt = {} : null;
 		// init default value
-		_.each({
+		_.mixObject(opt, {
 			require: false,
-			def: undefined // only effect when require = true
-		}, function(value, key) {
-			opt[key] === undefined ? opt[key] = value : null;
+			def: undefined
 		});
 		// init extend validate
 		if(_.isFunction(opt.validate)) {
@@ -66,19 +64,13 @@ instance.base.type.func = instance.base.type.auto.extend({
 
 	init: function(opt) {
 		opt === undefined ? opt = {} : null;
-		// init default data
-		_.each({
+		_.mixObject(opt, {
+			multi: false,
 			store: false,
 			sequence: 10,
 			get: function(ids, data, callback) {
-				callback();
-			},
-			set: function() {
 			}
-		}, function(value, key) {
-			opt[key] === undefined ? opt[key] = value : null;
 		});
-		// return
 		this._super(opt);
 	},
 
