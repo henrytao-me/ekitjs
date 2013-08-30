@@ -32,9 +32,11 @@ EkitJS is a web framework is built on the top of orther basic NodeJS modules. So
 
 1. In your package.json, add dependencies:
 
-		"dependencies": {
-			"ekitjs": "*"
-		}
+	```
+	dependencies": {
+		"ekitjs": "*"
+	}
+	```
 
 2. Download the package, using: 
 	
