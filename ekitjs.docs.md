@@ -1,6 +1,6 @@
 # ekitJS
 
-A web framework is built on the top of expressjs + mongodb native driver + socket.io, aims to reduce web development lifecycle, effective in collaboration, reusable code and support real time sync data from Database to Web Client.
+A web framework is built on the top of expressjs + mongodb native driver + socket.io, aims to reduce web development lifecycle, effective in collaboration, reusable code, dealing with business logic and support real time sync data from Database to Web Client.
 
 ### Start server with a single line of code 
 ```
