@@ -3,7 +3,7 @@ console.log('');
  * Static variable:
  * fs, path, _, Class
  * express, app, server, io
- * ekitjs, Addon, instance, types
+ * ekitjs, Addon, instance, types, Controller, Model
  */
 
 GLOBAL.fs = require('fs');
@@ -24,6 +24,8 @@ GLOBAL.ekitjs = null;
 GLOBAL.Addon = null;
 GLOBAL.instance = {};
 GLOBAL.types = {};
+GLOBAL.Controller = null;
+GLOBAL.Model = null;
 require(path.join(__dirname, 'core', 'addon.js'));
 
 var ekit_dir = require('ekit-dir');
@@ -404,6 +406,23 @@ ekitjs = Class.extend({
 
 			// init addon name in instance
 			instance[addon.name] === undefined ? instance[addon.name] = {} : null;
+			
+			// load all js in addon root folder
+			try {
+				// get model in alphabe
+				_.each(fs.readdirSync(path.join(addon.path)), function(model) {
+					if(!fs.lstatSync(path.join(addon.path, model)).isDirectory()) {
+						if(model.lastIndexOf('.js') !== (model.length - 3)){
+							return;
+						};
+						if(model === 'index.js'){
+							return;
+						};
+						require(path.join(addon.path, model));
+					};
+				}, undefined, this);
+			} catch(ex) {
+			};
 
 			// get all models: auto load from controller + model folder
 			var models = {
@@ -415,7 +434,10 @@ ekitjs = Class.extend({
 				try {
 					// get model in alphabe
 					_.each(fs.readdirSync(path.join(addon.path, type)), function(model) {
-						if(!fs.lstatSync(path.join(path.join(addon.path, type), model)).isDirectory()) {
+						if(!fs.lstatSync(path.join(addon.path, type, model)).isDirectory()) {
+							if(model.lastIndexOf('.js') !== (model.length - 3)){
+								return;
+							};
 							models[type].push(path.join(addon.path, type, model));
 						};
 					}, undefined, this);

@@ -37,7 +37,7 @@ var __class = {
 	}
 };
 
-instance.base.controller = instance.base.base.extend(__class);
+GLOBAL.Controller = instance.base.controller = instance.base.base.extend(__class);
 
 // config type
 instance.base.controller.__type = 'controller';

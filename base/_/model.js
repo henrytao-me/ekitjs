@@ -75,6 +75,7 @@ var __class = {
 	getDB: function() {
 		this._db === null ? this._db = ekitjs.db : null;
 		if(this._db === null) {
+			console.log('db is null');
 			throw {
 				func: 'getDB',
 				message: 'db is null'
@@ -693,7 +694,7 @@ var __class = {
 	}
 };
 
-instance.base.model = instance.base.base.extend(__class);
+GLOBAL.Model = instance.base.model = instance.base.base.extend(__class);
 
 // config model static type
 instance.base.model.__type = 'model';
