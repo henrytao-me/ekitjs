@@ -68,7 +68,9 @@ instance.base.asset = Class.extend({
 			_.each(this.data[type][val], function(file){
 				res += fs.readFileSync(file, 'utf8') + '\n';
 			});
-			res = this.optimize(type, res);
+			if(app.get('env') === 'production') {
+				res = this.optimize(type, res);
+			};
 			break;
 		case 'scripts':
 			res = '';
@@ -80,7 +82,9 @@ instance.base.asset = Class.extend({
 				res += 'ekitjs.data = ' + JSON.stringify(script.data) + '\n';
 				res += entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}")) + '\n';
 			});
-			res = this.optimize(type, res);
+			if(app.get('env') === 'production') {
+				res = this.optimize(type, res);
+			};
 			break;
 		default:
 			break;

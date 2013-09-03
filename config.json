@@ -1,6 +1,7 @@
 {
 	"addons_path": ["addons"],
 	"ekit_node_modules": {},
+	"env": "development",
 	"mongo_connection_string": "mongodb://127.0.0.1:27017/ekitjs",
 	"port": 3000,
 	"socket": true,

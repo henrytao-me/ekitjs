@@ -106,8 +106,9 @@ ekitjs = Class.extend({
 		app.use(express.methodOverride());
 		app.use(app.router);
 		app.use(express.compress());
+		app.set('env', this.config.env);
 		if(app.get('env') === 'development') {
-			app.use(express.errorHandler());
+			// app.use(express.errorHandler());
 		};
 		if(app.get('env') === 'production') {
 			// TODO
