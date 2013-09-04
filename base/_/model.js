@@ -584,6 +584,13 @@ var __class = {
 			});
 			return;
 		};
+		// check _id field in query
+		_.each(args[0], function(value, key) {
+			try {
+				key === '_id' ? args[0][key] = new ObjectId(value) : null;
+			} catch(ex) {
+			};
+		});
 		// normal update
 		var func_update = function() {
 			// validate args
@@ -610,7 +617,7 @@ var __class = {
 							_id: 1
 						}, function(e, data) {
 							var ids = [];
-							_.each(data, function(item){
+							_.each(data, function(item) {
 								ids.push(item._id);
 							});
 							self.updateTrigger(ids);
@@ -662,22 +669,22 @@ var __class = {
 		// find out ids before delete
 		this.read(args[0], {
 			_id: 1
-		}, function(e, data){
-			_.each(data, function(item){
+		}, function(e, data) {
+			_.each(data, function(item) {
 				ids.push(item._id);
 			});
 			// get out callback
 			var callback = args.pop();
 			args.push(function(err, result) {
-				if(!err){
+				if(!err) {
 					self.deleteTrigger(ids);
-				};				
+				};
 				callback.call(self, err, result);
 			});
 			// delete
 			this.getCollection(function(collection) {
 				collection.remove.apply(collection, args);
-			});	
+			});
 		});
 	},
 

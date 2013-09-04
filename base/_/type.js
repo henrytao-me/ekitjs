@@ -1,6 +1,7 @@
+var ObjectId = require('mongodb').ObjectID;
 /*
  * Init type
- * core type: auto, func, object, array
+ * core type: auto, id, func, object, array
  * need to support: string, number, date, datetime, boolean, selection
  */
 
@@ -17,18 +18,35 @@ instance.base.type.auto = Class.extend({
 		// init default value
 		_.mixObject(opt, {
 			require: false,
-			def: undefined
+			def: undefined,
+			prefix: undefined
 		});
+		// init prefix
+		opt.validate = (function(validate) {
+			if(!_.isFunction(validate)) {
+				validate = function(data) {
+					return data;
+				};
+			};
+			return function(data) {
+				data = validate(data);
+				if(opt.prefix !== undefined) {
+					data = opt.prefix + data;
+				};
+				return data;
+			};
+		})(opt.validate);
 		// init extend validate
 		if(_.isFunction(opt.validate)) {
-			var validate = this.validate;
-			this.validate = function(data) {
-				return opt.validate.call({
-					_super: function(data) {
-						return validate(data);
-					}
-				}, data);
-			};
+			this.validate = (function(validate) {
+				return function(data) {
+					return opt.validate.call({
+						_super: function(data) {
+							return validate(data);
+						}
+					}, data);
+				};
+			})(this.validate);
 		};
 		// return
 		this.opt = opt;
@@ -48,7 +66,11 @@ instance.base.type.auto = Class.extend({
 					input_data: data
 				};
 			} else {
-				data = this.get('def');
+				if(_.isFunction(this.get('def'))) {
+					data = this.get('def').call(this);
+				} else {
+					data = this.get('def');
+				};
 			};
 		};
 		return data;
@@ -56,6 +78,18 @@ instance.base.type.auto = Class.extend({
 
 	validate: function(data) {// check data type
 		return data;
+	}
+});
+
+instance.base.type.id = instance.base.type.auto.extend({
+
+	init: function(opt) {
+		var self = this;
+		opt === undefined ? opt = {} : null;
+		opt.require = true, opt.def = function() {
+			return new ObjectId();
+		};
+		this._super(opt);
 	}
 });
 
