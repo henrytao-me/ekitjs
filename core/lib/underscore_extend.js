@@ -29,6 +29,15 @@ _.each = function(list, iterator, context, self) {
 };
 
 /*
+ * initObject data from array
+ */
+_.initObject = function(obj, keys, data){
+	_.each(keys, function(key){
+		obj[key] === undefined ? obj[key] = data : null;
+	});
+};
+
+/*
  * isObject (remove isArray & isFunction)
  */
 
