@@ -31,10 +31,11 @@ instance.base.cFuncStore = instance.base.controller.extend({
 					return;
 				};
 				// get all trigger
-				_.each(column.get('store'), function(trigger, model) {
-					triggerCollection[model] = triggerCollection[model] || [];
+				_.each(column.get('store'), function(trigger, modelName) {
+					triggerCollection[modelName] = triggerCollection[modelName] || [];
 					trigger.self = column;
-					triggerCollection[model].push(trigger);
+					trigger.updateObj = model;
+					triggerCollection[modelName].push(trigger);
 				});
 			});
 		});
@@ -46,6 +47,18 @@ instance.base.cFuncStore = instance.base.controller.extend({
 		});
 
 		setTimeout(function() {
+			
+			return;
+			
+			self.pool('model.document').update({
+				_id: '5229aa9f59bd94b10e000001'
+			}, {
+				$set: {
+					'abc': ['5229aa9f59bd94b10e000001']
+				}
+			}, function(e, data){
+				console.log(e, data);
+			});			
 			
 			return;
 			
@@ -89,6 +102,7 @@ var triggerFunc = function(ids, fields) {
 	// start trigger
 	_.each(triggerCollection[this.__name], function(trigger) {
 		var func = trigger.self;
+		var updateObj = trigger.updateObj;
 		// check column before trigger
 		if(fields.indexOf('_id') < 0) {
 			var isReturn = true;
@@ -104,7 +118,7 @@ var triggerFunc = function(ids, fields) {
 		//
 		trigger.callback.call(self, ids, {}, function(ids) {
 			// call get method to get function data
-			func.get('get').call(self, ids, {}, function(docs) {
+			func.get('get').call(updateObj, ids, {}, function(docs) {
 				// init update data
 				var data = {};
 				// check multi
@@ -119,12 +133,14 @@ var triggerFunc = function(ids, fields) {
 				_.each(data, function(value, _id) {
 					var tmp = {};
 					tmp[func.__name] = value;
-					self.update({
+					updateObj.update({
 						_id: _id
 					}, {
 						$set: tmp
 					}, {
 						noTrigger: true
+					}, function(e, data){
+						console.log('----', _id, func.__name, tmp, value, e, data);
 					});
 				});
 
@@ -165,11 +181,12 @@ instance.base.model.include({
 		// start trigger
 		_.each(triggerCollection[this.__name], function(trigger) {
 			var func = trigger.self;
+			var updateObj = trigger.updateObj;
 			trigger.callback.call(self, ids, {}, function(ids) {
-				callback((function(func, self, ids) {
+				callback((function(func, self, updateObj, ids) {
 					return function() {
 						// call get method to get function data
-						func.get('get').call(self, ids, {}, function(docs) {
+						func.get('get').call(updateObj, ids, {}, function(docs) {
 							// init update data
 							var data = {};
 							// check multi
@@ -184,7 +201,7 @@ instance.base.model.include({
 							_.each(data, function(value, _id) {
 								var tmp = {};
 								tmp[func.__name] = value;
-								self.update({
+								updateObj.update({
 									_id: _id
 								}, {
 									$set: tmp
@@ -194,7 +211,7 @@ instance.base.model.include({
 							});
 						});
 					}
-				})(func, self, ids));
+				})(func, self, updateObj, ids));
 			});
 		});
 	}
