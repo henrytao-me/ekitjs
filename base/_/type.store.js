@@ -47,17 +47,19 @@ instance.base.cFuncStore = instance.base.controller.extend({
 
 		setTimeout(function() {
 			
+			return;
+			
 			self.pool('sample1.model.user')['delete']({
-				_id: '52297b6533b544320a000001'
+				_id: '5229894651328ee30b000001'
 			});
 			
 			return;
 
 			self.pool('sample1.model.user').update({
-				_id: '52297b6533b544320a000001'
+				_id: '5229894651328ee30b000001'
 			}, {
 				$set: {
-					'name.first': 'Henry - ',
+					'name.first': 'Henry',
 					'name.last': 'Tao'
 				}
 			});
@@ -65,7 +67,7 @@ instance.base.cFuncStore = instance.base.controller.extend({
 			return;
 
 			self.pool('sample1.model.user').read({
-				_id: '52297b6533b544320a000001'
+				_id: '5229894651328ee30b000001'
 			}, function(e, data) {
 				console.log(data);
 			});
@@ -137,14 +139,14 @@ instance.base.model.include({
 		this._super.apply(this, arguments);
 	},
 
-	createTrigger: function(ids, args) {
+	__createTrigger: function(ids, args) {
 		// call super
 		this._super.apply(this, arguments);
 		// start trigger
 		triggerFunc.call(this, ids, ['_id']);
 	},
 
-	updateTrigger: function(ids, args) {
+	__updateTrigger: function(ids, args) {
 		// call super function
 		this._super.apply(this, arguments);
 		// get update fields
@@ -158,7 +160,7 @@ instance.base.model.include({
 		triggerFunc.call(this, ids, fields);
 	},
 
-	beforeDelete: function(ids, callback) {// need to query before delete successful.
+	__beforeDelete: function(ids, callback) {// need to query before delete successful.
 		var self = this;
 		// start trigger
 		_.each(triggerCollection[this.__name], function(trigger) {

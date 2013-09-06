@@ -355,8 +355,9 @@ var __class = {
 					ids.push(item._id);
 				});
 				if(args[1].noTrigger !== true) {
-					self.createTrigger(ids, args);
+					self.__createTrigger(ids, args);
 				};
+				self.createTrigger(ids, args);
 				callback.call(self, err, ids);
 				return;
 			};
@@ -627,8 +628,9 @@ var __class = {
 								ids.push(item._id);
 							});
 							if(args[2].noTrigger !== true) {
-								self.updateTrigger(ids, args);
+								self.__updateTrigger(ids, args);
 							};
+							self.updateTrigger(ids, args);
 						});
 					};
 					tmp.call(self, err, result);
@@ -686,12 +688,13 @@ var __class = {
 			args.push(function(err, result) {
 				if(!err) {
 					if(args[1].noTrigger !== true) {
-						self.deleteTrigger(ids, args);
+						self.__deleteTrigger(ids, args);
 					};
+					self.deleteTrigger(ids, args);
 				};
 				callback.call(self, err, result);
 			});
-			self.beforeDelete(ids, function(trigger) {
+			self.__beforeDelete(ids, function(trigger) {
 				// init trigger
 				_.isFunction(trigger) ? null : trigger = function() {
 				};
@@ -717,13 +720,25 @@ var __class = {
 
 	},
 
-	beforeDelete: function(ids, callback) {
-		// do not implement this one
-		callback();
-	},
-
 	deleteTrigger: function(ids, args) {
 
+	},
+	
+	__createTrigger: function(ids, args) {
+
+	},
+
+	__updateTrigger: function(ids, args) {
+
+	},
+
+	__deleteTrigger: function(ids, args) {
+		
+	},
+	
+	__beforeDelete: function(ids, callback) {
+		// do not implement this one
+		callback();
 	}
 };
 
