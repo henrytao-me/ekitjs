@@ -139,8 +139,6 @@ var triggerFunc = function(ids, fields) {
 						$set: tmp
 					}, {
 						noTrigger: true
-					}, function(e, data){
-						console.log('----', _id, func.__name, tmp, value, e, data);
 					});
 				});
 
