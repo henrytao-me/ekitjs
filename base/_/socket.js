@@ -26,9 +26,9 @@ instance.base.socket = instance.base.controller.extend({
 				return;
 			};
 			var collection = {};
-			var inst = new __class();
-			_.each(inst.__keys, function(value, key) {
-				if(_.isFunction(inst[key])) {
+			var keys = __class.__keys;
+			_.each(keys, function(value, key) {
+				if(value.type === 'function') {
 					var isPass = true;
 					_.each(expt, function(e) {
 						if(key.indexOf(e) === 0) {

@@ -182,8 +182,16 @@ ekitjs = Class.extend({
 		 * init routing - controller
 		 *
 		 */
-
+		
 		_.each(_.encodeObject(instance, '__class'), function(controller, key) {
+			// init instance name
+			if(['controller', 'model'].indexOf(controller.__type) >= 0){
+				controller.include({
+					__name: key
+				});
+				controller.__name = key;
+			};
+			// check controller
 			if(controller.__type !== 'controller') {
 				return;
 			};

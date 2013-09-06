@@ -81,7 +81,9 @@
 		// Copy the properties over onto the new prototype
 		for(var name in prop) {
 			// add to __keys
-			prototype.__keys[name] = (prototype.__keys[name] || 0) + 1;
+			prototype.__keys[name] = prototype.__keys[name] || {};
+			prototype.__keys[name].n = (prototype.__keys[name].n || 0) + 1;
+			prototype.__keys[name].type = typeof prop[name];
 
 			// Check if we're overwriting an existing function
 			prototype[name] = typeof prop[name] == "function" && fnTest.test(prop[name]) ? (function(name, fn) {
@@ -126,6 +128,11 @@
 
 		Class.include = function(properties) {
 			for(var name in properties) {
+				// add to __keys
+				prototype.__keys[name] = prototype.__keys[name] || {};
+				prototype.__keys[name].n = (prototype.__keys[name].n || 0) + 1;
+				prototype.__keys[name].type = typeof properties[name];
+				//
 				if( typeof properties[name] !== 'function' || !fnTest.test(properties[name])) {
 					prototype[name] = properties[name];
 				} else if( typeof prototype[name] === 'function' && prototype.hasOwnProperty(name)) {
@@ -166,6 +173,9 @@
 			Class.extend = this.extend;
 		};
 		Class.__class = true;
+		
+		// add __keys to Class
+		Class.__keys = prototype.__keys;
 
 		return Class;
 	};

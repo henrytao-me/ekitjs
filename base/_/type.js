@@ -122,7 +122,10 @@ instance.base.type.func = instance.base.type.auto.extend({
 	},
 
 	validate: function(data) {
-		return undefined;
+		if(this.get('store') === false){
+			return undefined;
+		}
+		return data;		
 	}
 });
 

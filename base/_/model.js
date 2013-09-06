@@ -149,12 +149,13 @@ var __class = {
 					res = column[k];
 					break;
 				default:
-					throw {
-						msg: 'invalid structure',
-						field: column[k].__name,
-						type: column[k].__type,
-						input_key: key,
-					};
+					res = column[k];
+					// throw {
+					// msg: 'invalid structure',
+					// field: column[k].__name,
+					// type: column[k].__type,
+					// input_key: key,
+					// };
 					break;
 				};
 			};
@@ -353,7 +354,9 @@ var __class = {
 				_.each(result, function(item) {
 					ids.push(item._id);
 				});
-				self.createTrigger(ids);
+				if(args[1].noTrigger !== true) {
+					self.createTrigger(ids, args);
+				};
 				callback.call(self, err, ids);
 				return;
 			};
@@ -379,7 +382,7 @@ var __class = {
 		this.getCollection(function(collection) {
 			collection.insert.apply(collection, args);
 		});
-		return;
+		console.log('create on', this.__name);
 	},
 
 	read: function(query, option, callback) {
@@ -518,7 +521,9 @@ var __class = {
 					_.each(funcs, function(func, key, l, opt) {
 						sequence.push((function(func, key, opt) {
 							return function(fcb) {
-								func.get('get').call(self, ids, keyData, function(funcData) {
+								func.get('get').call(self, ids, {
+									data: keyData
+								}, function(funcData) {
 									_.each(funcData, function(fData, _id) {
 										var tmp = {};
 										if(func.get('multi') === true) {
@@ -556,6 +561,7 @@ var __class = {
 				};
 			});
 		});
+		console.log('read on', this.__name);
 	},
 
 	update: function(selector, document, option, callback) {
@@ -620,7 +626,9 @@ var __class = {
 							_.each(data, function(item) {
 								ids.push(item._id);
 							});
-							self.updateTrigger(ids);
+							if(args[2].noTrigger !== true) {
+								self.updateTrigger(ids, args);
+							};
 						});
 					};
 					tmp.call(self, err, result);
@@ -658,7 +666,7 @@ var __class = {
 		} else {
 			func_update.call(self);
 		};
-		return;
+		console.log('update on', this.__name)
 	},
 
 	'delete': function(selector, option, calback) {
@@ -677,26 +685,44 @@ var __class = {
 			var callback = args.pop();
 			args.push(function(err, result) {
 				if(!err) {
-					self.deleteTrigger(ids);
+					if(args[1].noTrigger !== true) {
+						self.deleteTrigger(ids, args);
+					};
 				};
 				callback.call(self, err, result);
 			});
-			// delete
-			this.getCollection(function(collection) {
-				collection.remove.apply(collection, args);
+			self.beforeDelete(ids, function(trigger) {
+				// init trigger
+				_.isFunction(trigger) ? null : trigger = function() {
+				};
+				var tmp = args.pop();
+				args.push(function(err, result){
+					tmp.call(self, err, result);
+					trigger();
+				});
+				// delete
+				self.getCollection(function(collection) {
+					collection.remove.apply(collection, args);
+				});
 			});
 		});
+		console.log('delete on', this.__name)
 	},
 
-	createTrigger: function() {
-
-	},
-
-	updateTrigger: function() {
+	createTrigger: function(ids, args) {
 
 	},
 
-	deleteTrigger: function() {
+	updateTrigger: function(ids, args) {
+
+	},
+
+	beforeDelete: function(ids, callback) {
+		// do not implement this one
+		callback();
+	},
+
+	deleteTrigger: function(ids, args) {
 
 	}
 };
