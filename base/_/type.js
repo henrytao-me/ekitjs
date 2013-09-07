@@ -1,4 +1,5 @@
 var ObjectId = require('mongodb').ObjectID;
+
 /*
  * Init type
  * core type: auto, id, func, object, array
@@ -25,11 +26,11 @@ instance.base.type.auto = Class.extend({
 		opt.validate = (function(validate) {
 			if(!_.isFunction(validate)) {
 				validate = function(data) {
-					return data;
+					return this._super(data);
 				};
 			};
 			return function(data) {
-				data = validate(data);
+				data = validate.call(this, data);
 				if(opt.prefix !== undefined) {
 					data = opt.prefix + data;
 				};
@@ -42,7 +43,7 @@ instance.base.type.auto = Class.extend({
 				return function(data) {
 					return opt.validate.call({
 						_super: function(data) {
-							return validate(data);
+							return validate.call(self, data);
 						}
 					}, data);
 				};
@@ -86,10 +87,15 @@ instance.base.type.id = instance.base.type.auto.extend({
 	init: function(opt) {
 		var self = this;
 		opt === undefined ? opt = {} : null;
-		opt.require = true, opt.def = function() {
+		opt.def = function() {
 			return new ObjectId();
 		};
 		this._super(opt);
+	},
+	
+	validate: function(data){
+		var data = typeof data === 'object' ? data : new ObjectId(data);
+		return data; 
 	}
 });
 
@@ -122,10 +128,10 @@ instance.base.type.func = instance.base.type.auto.extend({
 	},
 
 	validate: function(data) {
-		if(this.get('store') === false){
+		if(this.get('store') === false) {
 			return undefined;
 		}
-		return data;		
+		return data;
 	}
 });
 
