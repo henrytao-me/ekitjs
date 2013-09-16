@@ -13,17 +13,18 @@
  */
 
 var triggerCollection = {};
+var waitForSync = false;
 
 instance.base.cFuncStore = instance.base.controller.extend({
 	init: function() {
 		var self = this;
 		// get all model
 		_.each(_.encodeObject(instance, '__class'), function(modelClass, key) {
-			if(modelClass.__type !== 'model') {
+			if(modelClass.__type !== 'model' || key === 'base.model') {
 				return;
 			};
 			// init model, match all _column change by using include method
-			var model = new modelClass();
+			var model = ekitjs.pool(key);
 			// get all function having trigger
 			_.each(_.encodeObject(model.___column, '__class'), function(column, name) {
 				// check function field having store !== false
@@ -45,61 +46,13 @@ instance.base.cFuncStore = instance.base.controller.extend({
 				return (a.sequence || 10) - (b.sequence || 10);
 			});
 		});
-
-		setTimeout(function() {
-			
-			return;
-			
-			self.pool('model.document').update({
-				_id: '5229aa9f59bd94b10e000001'
-			}, {
-				$set: {
-					'abc': ['5229aa9f59bd94b10e000001']
-				}
-			}, function(e, data){
-				console.log(e, data);
-			});			
-			
-			return;
-			
-			self.pool('sample1.model.user')['delete']({
-				_id: '5229894651328ee30b000001'
-			});
-			
-			return;
-
-			self.pool('sample1.model.user').update({
-				_id: '5229894651328ee30b000001'
-			}, {
-				$set: {
-					'name.first': 'Henry',
-					'name.last': 'Tao'
-				}
-			});
-
-			return;
-
-			self.pool('sample1.model.user').read({
-				_id: '5229894651328ee30b000001'
-			}, function(e, data) {
-				console.log(data);
-			});
-
-			return;
-
-			self.pool('sample1.model.user').create({
-				name: {
-					first: 'First',
-					last: 'Last'
-				}
-			});
-		}, 800);
 	},
 });
 
-var triggerFunc = function(ids, fields) {
+var triggerFunc = function(ids, fields, callback) {
 	var self = this;
 	// start trigger
+	var isStart = false;
 	_.each(triggerCollection[this.__name], function(trigger) {
 		var func = trigger.self;
 		var updateObj = trigger.updateObj;
@@ -116,9 +69,10 @@ var triggerFunc = function(ids, fields) {
 			};
 		};
 		//
-		trigger.callback.call(self, ids, {}, function(ids) {
+		isStart = true;
+		trigger.callback.call(self, ids, function(ids) {
 			// call get method to get function data
-			func.get('get').call(updateObj, ids, {}, function(docs) {
+			func.get('get').call(updateObj, ids, function(docs) {
 				// init update data
 				var data = {};
 				// check multi
@@ -130,21 +84,32 @@ var triggerFunc = function(ids, fields) {
 					};
 				});
 				// update
-				_.each(data, function(value, _id) {
-					var tmp = {};
-					tmp[func.__name] = value;
-					updateObj.update({
-						_id: _id
-					}, {
-						$set: tmp
-					}, {
-						noTrigger: true
+				if(_.keys(data).length === 0) {
+					callback();
+				} else {
+					var success = _.success(_.keys(data).length, function() {
+						callback();
 					});
-				});
-
+					_.each(data, function(value, _id, l, opt) {
+						var tmp = {};
+						tmp[func.__name] = value;
+						updateObj.update({
+							_id: _id
+						}, {
+							$set: tmp
+						}, {
+							trigger: false
+						}, function(e, d) {
+							success.success();
+						});
+					});
+				};
 			});
 		});
 	});
+	if(isStart === false){
+		callback();
+	};
 };
 
 instance.base.model.include({
@@ -153,64 +118,66 @@ instance.base.model.include({
 		this._super.apply(this, arguments);
 	},
 
-	__createTrigger: function(ids, args) {
+	createTrigger: function(ids, args, callback) {
+		// init success function
+		var success = (function(self, _super, args) {
+			return function() {
+				_super.apply(self, args);
+			};
+		})(this, this._super, arguments);
+		// fields
+		var fields = ['_id'];
 		// call super
-		this._super.apply(this, arguments);
+		if(waitForSync !== true) {
+			success();
+		};
 		// start trigger
-		triggerFunc.call(this, ids, ['_id']);
+		triggerFunc.call(this, ids, fields, function() {
+			// call super if you want to make trigger sequence
+			if(waitForSync === true) {
+				success();
+			};
+		});
 	},
 
-	__updateTrigger: function(ids, args) {
-		// call super function
-		this._super.apply(this, arguments);
-		// get update fields
+	updateTrigger: function(ids, args, callback) {
+		// init success function
+		var success = (function(self, _super, args) {
+			return function() {
+				_super.apply(self, args);
+			};
+		})(this, this._super, arguments);
+		// init fields
 		var fields = [];
-		_.each(args[1], function(data) {
-			_.each(data, function(d, key) {
+		_.each(args[1], function(v, k) {
+			_.each(v, function(value, key) {
 				fields.push(key.split('.')[0]);
 			});
 		});
+		// call super
+		if(waitForSync !== true) {
+			success();
+		};
 		// start trigger
-		triggerFunc.call(this, ids, fields);
+		triggerFunc.call(this, ids, fields, function() {
+			// call super if you want to make trigger sequence
+			if(waitForSync === true) {
+				success();
+			};
+		});
 	},
 
-	__beforeDelete: function(ids, callback) {// need to query before delete successful.
-		var self = this;
-		// start trigger
-		_.each(triggerCollection[this.__name], function(trigger) {
-			var func = trigger.self;
-			var updateObj = trigger.updateObj;
-			trigger.callback.call(self, ids, {}, function(ids) {
-				callback((function(func, self, updateObj, ids) {
-					return function() {
-						// call get method to get function data
-						func.get('get').call(updateObj, ids, {}, function(docs) {
-							// init update data
-							var data = {};
-							// check multi
-							_.each(docs, function(doc, _id) {
-								if(func.multi === true) {
-									data[_id] = doc[obj.__name];
-								} else {
-									data[_id] = doc;
-								};
-							});
-							// update
-							_.each(data, function(value, _id) {
-								var tmp = {};
-								tmp[func.__name] = value;
-								updateObj.update({
-									_id: _id
-								}, {
-									$set: tmp
-								}, {
-									noTrigger: true
-								});
-							});
-						});
-					}
-				})(func, self, updateObj, ids));
-			});
+	deleteTrigger: function(ids, args, callback) {
+		// init success function
+		var success = (function(self, _super, args) {
+			return function() {
+				_super.apply(self, args);
+			};
+		})(this, this._super, arguments);
+		// init fields
+		var fields = ['_id'];
+		triggerFunc.call(this, ids, fields, function() {
+			success();
 		});
 	}
 });

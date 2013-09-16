@@ -3,6 +3,10 @@ var ekit_minify = require('ekit-minify');
 instance.base.asset = Class.extend({
 	
 	data: null,
+	cache: {
+		css: null,
+		js: null
+	},
 
 	init: function() {
 		this.data = {
@@ -93,6 +97,9 @@ instance.base.asset = Class.extend({
 	},
 	
 	renderTags: function(type, val){
+		if(this.cache[type] && app.get('env') === 'production'){
+			return this.cache[type];
+		};
 		var res = '';
 		// urls
 		if(val === 'urls' || val === undefined){
@@ -116,6 +123,9 @@ instance.base.asset = Class.extend({
 		if((val === 'scripts' || val === undefined) && type === 'js'){
 			res += '<script type="text/javascript">' + this.render(type, 'scripts') + '</script>';
 		};
+		// cache asset
+		this.cache[type] = res;
+		// return
 		return res;
 	}
 });

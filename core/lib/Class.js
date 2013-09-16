@@ -74,9 +74,11 @@
 
 		// ekitjs: init __keys
 		prototype.__class = true;
-		if(!prototype.__keys) {
-			prototype.__keys = {};
-		};
+		var tmp = prototype.__keys;
+		prototype.__keys = {};
+		_.each(tmp, function(value, key){
+			prototype.__keys[key] = value;
+		});
 
 		// Copy the properties over onto the new prototype
 		for(var name in prop) {
@@ -123,6 +125,9 @@
 					this[key].self = this;
 				};
 			}, undefined, this);
+			// add Class
+			this.__Class = Class;
+			// 
 			return this;
 		};
 

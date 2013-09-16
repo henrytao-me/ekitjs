@@ -88,14 +88,15 @@ instance.base.type.id = instance.base.type.auto.extend({
 		var self = this;
 		opt === undefined ? opt = {} : null;
 		opt.def = function() {
-			return new ObjectId();
+			return (new ObjectId()).toString();
 		};
+		opt.require = true;
 		this._super(opt);
 	},
-	
-	validate: function(data){
-		var data = typeof data === 'object' ? data : new ObjectId(data);
-		return data; 
+
+	validate: function(data) {
+		data ? data = data.toString() : null;
+		return data;
 	}
 });
 
@@ -111,6 +112,9 @@ instance.base.type.func = instance.base.type.auto.extend({
 			get: function(ids, data, callback) {
 			}
 		});
+		opt.require = false;
+		opt.def = undefined;
+		opt.prefix = undefined;
 		this._super(opt);
 	},
 

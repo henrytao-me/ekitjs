@@ -9,6 +9,7 @@ console.log('');
 GLOBAL.fs = require('fs');
 GLOBAL.path = require('path');
 GLOBAL._ = require('underscore');
+GLOBAL.xml2js = require('xml2js').parseString;
 require(path.join(__dirname, 'core', 'lib', 'js_extend.js'));
 require(path.join(__dirname, 'core', 'lib', 'underscore_extend.js'));
 require(path.join(__dirname, 'core', 'lib', 'Class.js'));
@@ -182,13 +183,15 @@ ekitjs = Class.extend({
 		 * init routing - controller
 		 *
 		 */
-		
+
 		_.each(_.encodeObject(instance, '__class'), function(controller, key) {
 			// init instance name
-			if(['controller', 'model'].indexOf(controller.__type) >= 0){
+			if(['controller', 'model'].indexOf(controller.__type) >= 0) {
+				// set name for instance
 				controller.include({
 					__name: key
 				});
+				// set name for class
 				controller.__name = key;
 			};
 			// check controller
@@ -233,35 +236,34 @@ ekitjs = Class.extend({
 		};
 
 		/*
-		 *
-		 * finalize ekit core script
-		 *
-		 */
+		*
+		* finalize ekit core script
+		*
+		*/
 
-		if(this.config['socket'] === true) {
-			// load css & js
-			this.loadAsset(this.core_asset, this.addons.base);
-			// optimize asset
-			_.each(['js', 'css'], function(type) {
-				var content = '';
-				content += this.core_asset.render(type, 'files');
-				content += this.core_asset.render(type, 'scripts');
-				try {
-					content = require('ekit-minify').minify({
-						ext: '.' + type,
-						data: content
-					});
-					fs.writeFileSync(path.join(__dirname, 'base', 'static', type, 'ekitjs.min.' + type), content);
-				} catch(ex) {
-				};
+		// load core css & js
+		this.loadAsset(this.core_asset, this.addons.base);
+		// optimize asset
+		_.each(['js', 'css'], function(type) {
+			var content = '';
+			content += this.core_asset.render(type, 'files');
+			content += this.core_asset.render(type, 'scripts');
+			try {
+				content = require('ekit-minify').minify({
+					ext: '.' + type,
+					data: content
+				});
+				fs.writeFileSync(path.join(__dirname, 'base', 'static', type, 'ekitjs.min.' + type), content);
+			} catch(ex) {
+			};
+		}, undefined, this);
+		//extra addon from base
+		_.each(['js', 'css'], function(type) {
+			_.each(this.core_asset.data[type].urls, function(url) {
+				this.asset.addUrl(type, url);
 			}, undefined, this);
-			//extra addon from base
-			_.each(['js', 'css'], function(type) {
-				_.each(this.core_asset.data[type].urls, function(url) {
-					this.asset.addUrl(type, url);
-				}, undefined, this);
-			}, undefined, this);
-		};
+		}, undefined, this);
+
 		//normal addon
 		_.each(this.addons, function(addon) {
 			if(addon.name === 'base') {
@@ -286,8 +288,13 @@ ekitjs = Class.extend({
 	collectAddonPath: function() {
 		var res = {};
 		// collect ekit_package
-
-		_.each(this.config.ekit_node_modules, function(module_name, addon_name) {
+		_.each(this.config.ekit_node_modules, function(addon_name, module_name) {
+			if(addon_name === false){
+				return;
+			};
+			if(addon_name === true){
+				addon_name = module_name.replace('ekitjs-', '');
+			};
 			if(res[addon_name] === undefined && addon_name !== 'base') {
 				res[addon_name] = path.join(this.root_path, 'node_modules', module_name);
 			} else {
@@ -415,16 +422,16 @@ ekitjs = Class.extend({
 
 			// init addon name in instance
 			instance[addon.name] === undefined ? instance[addon.name] = {} : null;
-			
+
 			// load all js in addon root folder
 			try {
 				// get model in alphabe
 				_.each(fs.readdirSync(path.join(addon.path)), function(model) {
 					if(!fs.lstatSync(path.join(addon.path, model)).isDirectory()) {
-						if(model.lastIndexOf('.js') !== (model.length - 3)){
+						if(model.lastIndexOf('.js') !== (model.length - 3)) {
 							return;
 						};
-						if(model === 'index.js'){
+						if(model === 'index.js') {
 							return;
 						};
 						require(path.join(addon.path, model));
@@ -444,7 +451,7 @@ ekitjs = Class.extend({
 					// get model in alphabe
 					_.each(fs.readdirSync(path.join(addon.path, type)), function(model) {
 						if(!fs.lstatSync(path.join(addon.path, type, model)).isDirectory()) {
-							if(model.lastIndexOf('.js') !== (model.length - 3)){
+							if(model.lastIndexOf('.js') !== (model.length - 3)) {
 								return;
 							};
 							models[type].push(path.join(addon.path, type, model));

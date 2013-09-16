@@ -11,6 +11,16 @@ var __class = {
 	_db: null,
 
 	init: function() {
+		this.initColumn();
+	},
+
+	initColumn: function() {
+		// check cache exists
+		if(this.__Class.__column) {
+			this._column = this.__Class.__column;
+			return;
+		};
+		// init column
 		// re-init column, support quick define: {}: object datatype, []: array datatype
 		try {
 			var tmp = {};
@@ -49,6 +59,8 @@ var __class = {
 		} catch(ex) {
 			throw ex;
 		};
+		// cache column
+		this.__Class.__column = this._column;
 	},
 
 	getCollection: function(callback) {
@@ -63,6 +75,7 @@ var __class = {
 						callback(this._collection);
 					} else {
 						throw {
+							status: 'init',
 							func: 'getCollection',
 							message: 'collection is null'
 						};
@@ -75,8 +88,8 @@ var __class = {
 	getDB: function() {
 		this._db === null ? this._db = ekitjs.db : null;
 		if(this._db === null) {
-			console.log('db is null');
 			throw {
+				status: 'init',
 				func: 'getDB',
 				message: 'db is null'
 			};
@@ -167,6 +180,16 @@ var __class = {
 		var log = this;
 		var self = this;
 		var columns = this._column;
+
+		var supportList = ['$inc', '$rename', '$setOnInsert', '$set', '$unset', '$addToSet', '$pop', '$pullAll', '$pull', '$pushAll', '$push'];
+		_.each(args, function(v, key) {
+			if(supportList.indexOf(key) < 0) {
+				throw {
+					msg: "ekitjs doesn't support " + key
+				};
+			};
+		});
+
 		/*
 		* fields query
 		*/
@@ -338,331 +361,295 @@ var __class = {
 				};
 			}, undefined, this);
 		};
-
 		return args;
 	},
 
-	create: function(docs, option, callback) {
+	create: function(docs, options, callback) {
 		var log = this;
 		var self = this;
 		var args = _.initCallback(arguments);
-		// get out callback
-		var callback = args.pop();
-		args.push(function(err, result) {
+		// init
+		var _callback = args.pop();
+		docs = args[0] || {};
+		options = args[1] || {};
+		// force
+		var force = options.force === undefined ? false : options.force;
+		delete options.force;
+		// trigger
+		var trigger = options.trigger === undefined ? true : options.trigger;
+		delete options.trigger;
+		// callback
+		callback = function(err, result) {
+			var ids = [];
 			if(!err) {
-				var ids = [];
 				_.each(result, function(item) {
 					ids.push(item._id);
 				});
-				if(args[1].noTrigger !== true) {
-					self.__createTrigger(ids, args);
-				};
-				self.createTrigger(ids, args);
-				callback.call(self, err, ids);
-				return;
 			};
-			callback.call(self, err, result);
-		});
-		// check force = true (pass the validator)
-		if(args[1].force !== true) {
-			// validate args
-			try {
-				args[0] = this.createValidate(args[0]);
-			} catch(ex) {
-				log.log({
-					func: 'create',
-					args: JSON.stringify(arguments),
-					ex: ex
+			if(trigger === true && force !== true) {
+				self.createTrigger(ids, [docs, options], function() {
+					_callback.call(self, err, ids);
 				});
-				callback.call(self, ex, null);
-				return;
+			} else {
+				_callback.call(self, err, ids);
 			};
 		};
-		delete args[1].force;
+		// check createValidate
+		if(force !== true) {
+			try {
+				docs = this.createValidate(docs);
+			} catch(e) {
+				log.log({
+					func: 'create',
+					args: JSON.stringify([docs, options]),
+					e: e
+				});
+				return callback.call(self, e, null);
+			};
+		};
 		// execute
 		this.getCollection(function(collection) {
-			collection.insert.apply(collection, args);
+			collection.insert(docs, options, callback);
 		});
 		console.log('create on', this.__name);
 	},
 
-	read: function(query, option, callback) {
+	read: function(selector, options, callback) {
 		var log = this;
 		var self = this;
 		var args = _.initCallback(arguments);
 		// get out callback
-		var callback = args.pop();
-		// remove disable _id field
-		var fields = {};
-		_.each(args, function(value, key, l, opt) {
-			if(opt.index === 0) {
-				return;
-			};
-			if(value.fields !== undefined) {
-				if(value.fields._id !== undefined) {
-					delete args[key].fields._id;
-				};
-				fields = args[key].fields;
-			};
-		});
-		// check _id field in query
-		_.each(args[0], function(value, key) {
-			try {
-				key === '_id' ? args[0][key] = new ObjectId(value) : null;
-			} catch(ex) {
-			};
-		});
+		callback = args.pop();
+		selector = args[0] || {};
+		options = args[1] || {};
 		// force
-		var force = false;
-		_.each(args, function(arg) {
-			if(_.isObject(arg, true)) {
-				force = arg.force === true ? true : false;
+		var force = options.force === undefined ? false : options.force;
+		delete options.force;
+		// remove fields._id in options if _id: 0
+		if(_.isObject(options.fields, true)) {
+			if(options.fields._id === 0) {
+				delete options.fields._id;
 			};
-		});
+		};
+		// check _id field in selector
+		if(selector._id) {
+			if(_.isString(selector._id)) {
+				selector._id = {
+					$in: [selector._id]
+				};
+			};
+			_.each(selector._id['$in'], function(_id, i) {
+				_.isString(_id) ? selector._id['$in'][i] = new ObjectId(_id) : null;
+			});
+		};
 		// find
 		this.getCollection(function(collection) {
-			collection.find.apply(collection, args).toArray(function(err, data) {
-				if(err) {
-					return callback.call(self, err, []);
-				} else {
-					// check force = true (pass all function field)
-					if(force === true) {
-						return callback.call(self, null, data);
-					};
-					/*
-					* init function field (store === false)
-					*/
-					// init loop injection
-					if(self.___loop_injection === true) {
-						return callback.call(self, null, data);
-					};
-					self.___loop_injection = true;
-
-					// callback & reset loop_injection
-					var success = function() {
-						try {
-							self.___loop_injection = false;
-							delete self.___loop_injection;
-						} catch(ex) {
-						};
-						callback.call(self, null, data);
-					};
-
-					// get ids
-					var ids = [];
-					var keyData = {};
-					_.each(data, function(value) {
-						ids.push(value._id);
-						keyData[value._id] = value;
-					});
-
-					// get hide & show fields
-					var isQueryHide = null;
-					var show_fields = [];
-					var hidden_fields = [];
-					_.each(fields, function(value, key) {
-						if(value === 0) {
-							hidden_fields.push(key);
-							isQueryHide = true;
-						} else if(value === 1) {
-							show_fields.push(key);
-							isQueryHide = false;
-						}
-						;
-					});
-
-					// filter function fields in column with hidden fields
-					var funcs = {};
-					_.each(self._column, function(column, name) {
-						switch(column.__type) {
-						case 'func':
-							funcs[name] = column;
-							break;
-						case 'object':
-							funcs[name] = column.getFuncField();
-							break;
-						};
-					});
-					funcs = _.encodeObject(funcs, '__type');
-					_.each(funcs, function(value, key) {
-						// just keep function with store === false
-						if(value.get('store') !== false) {
-							delete funcs[key];
-							return;
-						};
-						if(isQueryHide === true) {
-							// remove function field in hidden_fields
-							_.each(hidden_fields, function(field) {
-								if(key.indexOf(field) === 0) {
-									delete funcs[key];
-								}
-							});
-						} else if(isQueryHide === false) {
-							// remove function field not in show_fields
-							var isIn = false;
-							_.each(show_fields, function(field) {
-								if(key.indexOf(field) === 0) {
-									isIn = true;
-								};
-							});
-							if(!isIn) {
-								delete funcs[key];
-							};
-						}
-						;
-					});
-
-					// sort funcs by sequence
-					_.sortObject(funcs, function(a, b) {
-						return a.get('sequence') - b.get('sequence');
-					});
-
-					// rebuild function fields sequence
-					var sequence = [];
-					_.each(funcs, function(func, key, l, opt) {
-						sequence.push((function(func, key, opt) {
-							return function(fcb) {
-								func.get('get').call(self, ids, {
-									data: keyData
-								}, function(funcData) {
-									_.each(funcData, function(fData, _id) {
-										var tmp = {};
-										if(func.get('multi') === true) {
-											tmp[key] = fData[key];
-										} else {
-											tmp[key] = fData;
-										};
-										_.setObject(keyData[_id], tmp);
-									});
-									data = _.values(keyData);
-									// callback & reset loop_injection
-									if(opt.isLast === true) {
-										success();
-									};
-									fcb();
-								});
-							};
-						})(func, key, opt));
-					});
-
-					if(sequence.length === 0) {
-						success();
-					} else {
-						(function(sequence) {
-							var args = arguments;
-							if(sequence.length === 0) {
-								return;
-							};
-							var func = sequence.shift();
-							func(function() {
-								args.callee(sequence);
-							});
-						})(sequence);
-					};
+			collection.find(selector, options).toArray(function(e, docs) {
+				if(e || force === true || self.__context.loop_injection === true) {
+					return callback.call(self, e, docs);
 				};
+
+				/*
+				 *
+				 * check function fields: store === false
+				 *
+				 */
+
+				self.__context.loop_injection = true;
+				var success = function() {
+					self.__context.loop_injection = false;
+					callback.call(self, e, docs);
+				};
+
+				// get ids
+				var ids = [];
+				var docsKey = {};
+				_.each(docs, function(doc) {
+					ids.push(doc._id);
+					docsKey[doc._id] = doc;
+				});
+
+				// get hide & show fields
+				var isQueryHide = null;
+				var show_fields = [];
+				var hidden_fields = [];
+				_.each(options.fields, function(value, key) {
+					if(value === 0) {
+						hidden_fields.push(key);
+						isQueryHide = true;
+					} else if(value === 1) {
+						show_fields.push(key);
+						isQueryHide = false;
+					}
+				});
+
+				// filter function fields in column with hidden fields
+				var funcs = {};
+				_.each(self._column, function(column, name) {
+					switch(column.__type) {
+					case 'func':
+						funcs[name] = column;
+						break;
+					case 'object':
+						funcs[name] = column.getFuncField();
+						break;
+					};
+				});
+				funcs = _.encodeObject(funcs, '__class');
+				_.each(funcs, function(func, key) {
+					// just keep function with store === false
+					if(func.get('store') !== false) {
+						delete funcs[key];
+						return;
+					};
+					if(isQueryHide === true) {
+						// remove function field in hidden_fields
+						_.each(hidden_fields, function(field) {
+							if(key.indexOf(field) === 0) {
+								delete funcs[key];
+							}
+						});
+					} else if(isQueryHide === false) {
+						// remove function field not in show_fields
+						var isIn = false;
+						_.each(show_fields, function(field) {
+							if(key.indexOf(field) === 0) {
+								isIn = true;
+							};
+						});
+						if(!isIn) {
+							delete funcs[key];
+						};
+					}
+				});
+				// sort funcs by sequence
+				_.sortObject(funcs, function(a, b) {
+					return a.get('sequence') - b.get('sequence');
+				});
+				// rebuild function fields sequence
+				var sequence = [];
+				_.each(funcs, function(func, key) {
+					sequence.push((function(func, key) {
+						return function(callback) {
+							func.get('get').call(self, ids, function(data) {
+								_.each(data, function(value, _id) {
+									var tmp = {};
+									if(func.get('multi') === true) {
+										tmp[key] = value[key];
+									} else {
+										tmp[key] = value;
+									};
+									_.setObject(docsKey[_id], tmp, true);
+								});
+								callback();
+							});
+						};
+					})(func, key));
+				});
+				_.sequence(sequence, function() {
+					docs = _.values(docsKey);
+					success();
+				});
 			});
 		});
 		console.log('read on', this.__name);
 	},
 
-	update: function(selector, document, option, callback) {
+	update: function(selector, document, options, callback) {
 		var log = this;
 		var self = this;
 		var args = _.initCallback(arguments);
 		// get out callback
 		var callback = args.pop();
-		args.push(function(err, result) {
-			if(err) {
-				callback.call(self, err, null);
-			} else {
-				callback.call(self, null, result);
-			};
-		});
-		// init full args (4 items)
-		if(args.length === 3) {
-			args[3] = args[2];
-			args[2] = {};
-		};
-		// check force = true (pass all volidator)
-		if(args[2].force === true) {
+		selector = args[0] || {};
+		document = args[1] || {};
+		options = args[2] || {};
+		// trigger
+		var trigger = options.trigger === undefined ? true : options.trigger;
+		delete options.trigger;
+		// force
+		var force = options.force === undefined ? false : options.force;
+		delete options.force;
+		if(force === true) {
 			// start update
-			this.getCollection(function(collection) {
-				collection.update.apply(collection, args);
+			return this.getCollection(function(collection) {
+				collection.update(selector, document, options, callback);
 			});
-			return;
 		};
-		// check _id field in query
-		_.each(args[0], function(value, key) {
-			try {
-				key === '_id' ? args[0][key] = new ObjectId(value) : null;
-			} catch(ex) {
+		// check upsert
+		var upsert = options.upsert;
+		delete options.upsert;
+		// check _id field in selector
+		if(selector._id) {
+			if(_.isString(selector._id)) {
+				selector._id = {
+					$in: [selector._id]
+				};
 			};
-		});
+			_.each(selector._id['$in'], function(_id, i) {
+				_.isString(_id) ? selector._id['$in'][i] = new ObjectId(_id) : null;
+			});
+		};
 		// normal update
 		var func_update = function() {
 			// validate args
 			try {
 				// remove $setOnInsert
-				delete args[1].$setOnInsert;
+				delete document.$setOnInsert;
 				// start validate
-				args[1] = this.updateValidate(args[1]);
-			} catch(ex) {
+				document = this.updateValidate(document);
+			} catch(e) {
 				log.log({
 					func: 'update',
-					args: JSON.stringify(arguments),
-					ex: ex
+					args: JSON.stringify([selector, document, options]),
+					e: e
 				});
-				callback.call(self, ex, 0);
-				return;
+				return callback.call(self, e, null);
 			};
 			// start update
 			this.getCollection(function(collection) {
-				var tmp = args.pop();
-				args.push(function(err, result) {
+				var _callback = callback;
+				callback = function(err, result) {
+					var ids = [];
 					if(!err) {
-						self.read(args[0], {
-							_id: 1
-						}, function(e, data) {
-							var ids = [];
-							_.each(data, function(item) {
+						// get update id
+						self.read(selector, {
+							fields: {
+								_id: 1
+							}
+						}, function(e, docs) {
+							_.each(docs, function(item) {
 								ids.push(item._id);
 							});
-							if(args[2].noTrigger !== true) {
-								self.__updateTrigger(ids, args);
+							if(trigger === true) {
+								self.updateTrigger(ids, [selector, document, options], function() {
+									_callback.call(self, err, ids);
+								});
+							} else {
+								_callback.call(self, err, ids);
 							};
-							self.updateTrigger(ids, args);
 						});
+					} else {
+						_callback.call(self, err, ids);
 					};
-					tmp.call(self, err, result);
-				});
-				collection.update.apply(collection, args);
+				};
+				collection.update(selector, document, options, callback);
 			});
 		};
-
-		// check upsert
-		var upsert = args[2].upsert;
-		delete args[2].upsert;
+		/*
+		 * start update
+		 */
 		if(upsert === true) {
-			this.read(args[0], {
+			this.read(selector, {
 				_id: 1
 			}, function(err, data) {
+				data = data || [];
 				if(data.length > 0) {
 					func_update.call(self);
 				} else {
 					// create using $setOnInsert
-					if(args[1].$setOnInsert !== undefined) {
-						self.create(args[1].$setOnInsert, function(e, r) {
-							if(e) {
-								args[3](e, 0);
-							} else {
-								args[3](null, 1, r);
-							};
-						});
-					} else {
-						args[3]({
-							msg: 'can not find $setOnInsert'
-						}, 0);
-					};
+					var setOnInsert = document.$setOnInsert || {};
+					self.create(setOnInsert, callback);
 				};
 			});
 		} else {
@@ -671,75 +658,71 @@ var __class = {
 		console.log('update on', this.__name)
 	},
 
-	'delete': function(selector, option, calback) {
+	'delete': function(selector, options, calback) {
 		var log = this;
 		var self = this;
 		var args = _.initCallback(arguments);
+		// get out callback
+		callback = args.pop();
+		selector = args[0] || {};
+		options = args[1] || {};
+		// trigger
+		var trigger = options.trigger === undefined ? true : options.trigger;
+		delete options.trigger;
+		// force
+		var force = options.force === undefined ? false : options.force;
+		delete options.force;
+		// check _id field in selector
+		if(selector._id) {
+			if(_.isString(selector._id)) {
+				selector._id = {
+					$in: [selector._id]
+				};
+			};
+			_.each(selector._id['$in'], function(_id, i) {
+				_.isString(_id) ? selector._id['$in'][i] = new ObjectId(_id) : null;
+			});
+		};
 		var ids = [];
 		// find out ids before delete
-		this.read(args[0], {
+		this.read(selector, {
 			_id: 1
 		}, function(e, data) {
 			_.each(data, function(item) {
 				ids.push(item._id);
 			});
 			// get out callback
-			var callback = args.pop();
-			args.push(function(err, result) {
-				if(!err) {
-					if(args[1].noTrigger !== true) {
-						self.__deleteTrigger(ids, args);
-					};
-					self.deleteTrigger(ids, args);
-				};
-				callback.call(self, err, result);
-			});
-			self.__beforeDelete(ids, function(trigger) {
-				// init trigger
-				_.isFunction(trigger) ? null : trigger = function() {
-				};
-				var tmp = args.pop();
-				args.push(function(err, result){
-					tmp.call(self, err, result);
-					trigger();
+			var _callback = callback;
+			callback = function(err, result) {
+				_callback.call(self, err, ids);
+			};
+			if(trigger === true) {
+				self.deleteTrigger(ids, [selector, options], function() {
+					self.getCollection(function(collection) {
+						collection.remove(selector, options, callback);
+					});
 				});
-				// delete
+			} else {
 				self.getCollection(function(collection) {
-					collection.remove.apply(collection, args);
+					collection.remove(selector, options, callback);
 				});
-			});
+			};
 		});
 		console.log('delete on', this.__name)
 	},
 
-	createTrigger: function(ids, args) {
-
+	createTrigger: function(ids, args, callback) {
+		callback();
 	},
 
-	updateTrigger: function(ids, args) {
-
+	updateTrigger: function(ids, args, callback) {
+		callback();
 	},
 
-	deleteTrigger: function(ids, args) {
-
-	},
-	
-	__createTrigger: function(ids, args) {
-
-	},
-
-	__updateTrigger: function(ids, args) {
-
-	},
-
-	__deleteTrigger: function(ids, args) {
-		
-	},
-	
-	__beforeDelete: function(ids, callback) {
-		// do not implement this one
+	deleteTrigger: function(ids, args, callback) {
 		callback();
 	}
+	
 };
 
 GLOBAL.Model = instance.base.model = instance.base.base.extend(__class);

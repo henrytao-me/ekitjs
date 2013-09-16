@@ -1,5 +1,4 @@
 GLOBAL.Addon = Class.extend({
-
 	name: null,
 	path: null,
 	config: null,
@@ -37,6 +36,16 @@ GLOBAL.Addon = Class.extend({
 			var config = {};
 			try {
 				config = require(this.path);
+				// check if not socket
+				if(ekitjs.config.socket !== true && this.name === 'base') {
+					var tmp = {};
+					_.each(config.js, function(value) {
+						tmp[value] = true;
+					});
+					delete tmp['http://../../socket.io/socket.io.js'];
+					delete tmp['/private/socket.client.js'];
+					config.js = _.keys(tmp);
+				};
 			} catch(ex) {
 			};
 			this.config = _.isObject(config, true) ? config : {};

@@ -1,5 +1,6 @@
 var __class = {
 	__name: 'unknow',
+	__context: {},
 
 	init: function() {
 
@@ -28,6 +29,9 @@ var __class = {
 		} catch(ex) {
 			return null;
 		};
+		// pass context
+		res.__context = this.__context;
+		//
 		return res;
 	},
 };

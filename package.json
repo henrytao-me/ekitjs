@@ -12,11 +12,12 @@
 	"dependencies": {
 		"ejs": "0.8.4",
 		"ekit-dir": "*",
+		"ekit-minify": "*",
 		"express": "3.3.5",
 		"mongodb": "1.3.19",
-		"underscore": "1.5.1",
 		"socket.io": "0.9.16",
-		"ekit-minify": "*"
+		"underscore": "1.5.1",
+		"xml2js": "0.2.8"
 	},
 	"license": "MIT",
 	"readme": "",

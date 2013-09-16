@@ -22,7 +22,8 @@ _.each = function(list, iterator, context, self) {
 		i++;
 		iterator.call(self, value, key, list, {
 			index: i - 1,
-			isLast: i >= n ? true : false
+			isLast: i >= n ? true : false,
+			isFirst: i === 1 ? true : false
 		});
 	};
 	_.___each(list, func, context);
@@ -31,8 +32,8 @@ _.each = function(list, iterator, context, self) {
 /*
  * initObject data from array
  */
-_.initObject = function(obj, keys, data){
-	_.each(keys, function(key){
+_.initObject = function(obj, keys, data) {
+	_.each(keys, function(key) {
 		obj[key] === undefined ? obj[key] = data : null;
 	});
 };
@@ -144,6 +145,27 @@ _.initCallback = function(args, callback) {
 };
 
 /*
+ * sequence
+ */
+_.sequence = function(sequence, callback) {
+	if(sequence.length === 0) {
+		callback();
+	} else {
+		(function(sequence) {
+			var args = arguments;
+			var func = sequence.shift();
+			if(sequence.length === 0) {
+				func(callback);
+			} else {
+				func(function() {
+					args.callee(sequence);
+				});
+			};
+		})(sequence);
+	};
+};
+
+/*
  * sortObject
  *
  * var tmp = [{a: 20}, {a: 10}];
@@ -232,7 +254,11 @@ _.success = function(n, func, obj) {
 				return;
 			};
 			if(_.isFunction(func)) {
-				func.call(obj);
+				if(obj){
+					func.call(obj);
+				}else{
+					func();
+				};				
 			};
 		};
 	};
