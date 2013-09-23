@@ -1,4 +1,5 @@
 var ObjectId = require('mongodb').ObjectID;
+var backupModel = {};
 
 var __class = {
 	_name: 'unknow',
@@ -16,8 +17,8 @@ var __class = {
 
 	initColumn: function() {
 		// check cache exists
-		if(this.__Class.__column) {
-			this._column = this.__Class.__column;
+		if(backupModel[this.__name]) {
+			this._column = backupModel[this.__name];
 			return;
 		};
 		// init column
@@ -60,7 +61,7 @@ var __class = {
 			throw ex;
 		};
 		// cache column
-		this.__Class.__column = this._column;
+		backupModel[this.__name] = this._column;
 	},
 
 	getCollection: function(callback) {

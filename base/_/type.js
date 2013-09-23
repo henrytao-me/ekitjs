@@ -2,7 +2,7 @@ var ObjectId = require('mongodb').ObjectID;
 
 /*
  * Init type
- * core type: auto, id, func, object, array
+ * core type: auto, id, func, object, array, many2one, one2many
  * need to support: string, number, date, datetime, boolean, selection
  */
 
@@ -136,6 +136,124 @@ instance.base.type.func = instance.base.type.auto.extend({
 			return undefined;
 		}
 		return data;
+	}
+});
+
+// type: many2one. Don't need to check exist
+instance.base.type.many2one = instance.base.type.auto.extend({
+
+	init: function(opt) {
+		opt === undefined ? opt = {} : null;
+		_.mixObject(opt, {
+			model: null,
+			key: '_id'
+		});
+		this._super(opt);
+	}
+});
+
+// type: one2many
+instance.base.type.one2many = instance.base.type.func.extend({
+
+	__type: 'func',
+
+	init: function(opt) {
+		opt === undefined ? opt = {} : null;
+		_.mixObject(opt, {
+			model: null,
+			key: '_id',
+			ref: null
+		});
+		if(!opt.model || !opt.ref) {
+			console.log('------------------------------------------------------------------');
+			console.log({
+				msg: 'one2many need: model & ref',
+				model: opt.model
+			});
+			console.log('------------------------------------------------------------------');
+			this.__type = 'auto';
+			return;
+		};
+		var one2many = this;
+		opt.get = function(ids, callback) {
+			var self = this;
+			var column = _.encodeObject(ekitjs.pool(one2many.get('model'))._column, '__class');
+			var ref = column[one2many.get('ref')];
+			var res = {};
+			this.read({
+				_id: {
+					$in: ids
+				}
+			}, {
+				fields: (function() {
+					var res = {};
+					res[one2many.get('key')] = 1;
+					return res;
+				})(),
+			}, function(e, docs) {
+				if(e || docs.length === 0) {
+					return callback(res);
+				};
+				// init success callback
+				var success = _.success(docs.length, function() {
+					callback(res);
+				});
+				// start find children
+				_.each(docs, function(doc) {
+					res[doc._id] = [];
+					(function(id) {
+						self.pool(one2many.get('model')).read((function() {
+							var res = {};
+							res[one2many.get('ref')] = id;
+							return res;
+						})(), {
+							fields: (function() {
+								var res = {};
+								res[one2many.get('key')] = 1;
+								return res;
+							})()
+						}, function(e, children) {
+							_.each(children, function(child) {
+								res[doc._id].push(child[one2many.get('key')]);
+							});
+							success.success();
+						});
+					})(doc[one2many.get('key')]);
+				});
+			});
+		};
+		// store
+		// opt.store = (function(){
+			// var res = {};
+			// res[opt.model] = {
+				// column: ['_id', opt.key, opt.ref],
+				// sequence: 10,
+				// callback: function(ids, callback) {
+					// var column = _.encodeObject(ekitjs.pool(one2many.get('model'))._column, '__class');
+					// var ref = column[one2many.get('ref')];
+					// this.read({
+						// _id: {
+							// $in: ids
+						// }
+					// }, {
+						// fields: (function(){
+							// var res = {};
+							// res[ref.get('key')] = 1;
+							// return res;
+						// })()
+					// }, function(e, docs){
+						// var tmp = [];
+						// _.each(docs, function(doc){
+							// tmp.push(doc._id);
+						// });
+						// callback(tmp);
+					// });
+				// }
+			// };
+			// return res;
+		// })();
+		// call super
+		this._super(opt);
 	}
 });
 

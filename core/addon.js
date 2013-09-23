@@ -37,7 +37,7 @@ GLOBAL.Addon = Class.extend({
 			try {
 				config = require(this.path);
 				// check if not socket
-				if(ekitjs.config.socket !== true && this.name === 'base') {
+				if(ekitjs.config.socket === false && this.name === 'base') {
 					var tmp = {};
 					_.each(config.js, function(value) {
 						tmp[value] = true;

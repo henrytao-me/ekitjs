@@ -11,13 +11,12 @@ instance.base.socket = instance.base.controller.extend({
 			ekitjs.start(ekitjs.data);
 		}, {
 			instance: this.getInstance(),
-			http: 'http://localhost',
 			socket: ekitjs.config.socket
 		});
 
 		// init socket
-		if(ekitjs.config.socket === true){
-			this.initSocket();	
+		if(ekitjs.config.socket !== false){
+			this.initSocket();
 		};		
 	},
 
@@ -82,7 +81,7 @@ instance.base.socket = instance.base.controller.extend({
 instance.base.model.include({
 	createTrigger: function(ids){
 		// check socket enable
-		if(ekitjs.config.socket !== true){
+		if(ekitjs.config.socket === false){
 			this._super.apply(this, arguments);
 			return;
 		};
@@ -99,7 +98,7 @@ instance.base.model.include({
 	
 	updateTrigger: function(ids){
 		// check socket enable
-		if(ekitjs.config.socket !== true){
+		if(ekitjs.config.socket === false){
 			this._super.apply(this, arguments);
 			return;
 		};
@@ -116,7 +115,7 @@ instance.base.model.include({
 	
 	deleteTrigger: function(ids){
 		// check socket enable
-		if(ekitjs.config.socket !== true){
+		if(ekitjs.config.socket === false){
 			this._super.apply(this, arguments);
 			return;
 		};

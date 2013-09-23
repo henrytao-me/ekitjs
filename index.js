@@ -20,6 +20,7 @@ GLOBAL.server = require('http').createServer(app);
 GLOBAL.io = require('socket.io').listen(server, {
 	log: false
 });
+io.set("transports", ["xhr-polling", "jsonp-polling"]); // support proxypreserve
 
 GLOBAL.ekitjs = null;
 GLOBAL.Addon = null;
@@ -77,6 +78,12 @@ ekitjs = Class.extend({
 			};
 			!_.isObject(this.config, true) ? this.config = {} : null;
 			_.mixObject(this.config, this.def);
+			// init config
+			_.each(this.config, function(value, key) {
+				if(_.isObject(value, true) && value['development'] !== undefined) {
+					this.config[key] = value[this.config.env];
+				};
+			}, undefined, this);
 			break;
 		};
 	},
@@ -289,10 +296,10 @@ ekitjs = Class.extend({
 		var res = {};
 		// collect ekit_package
 		_.each(this.config.ekit_node_modules, function(addon_name, module_name) {
-			if(addon_name === false){
+			if(addon_name === false) {
 				return;
 			};
-			if(addon_name === true){
+			if(addon_name === true) {
 				addon_name = module_name.replace('ekitjs-', '');
 			};
 			if(res[addon_name] === undefined && addon_name !== 'base') {

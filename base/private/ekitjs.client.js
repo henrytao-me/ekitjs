@@ -14,7 +14,7 @@ var ekitjs = Class.extend({
 		// init opt default value
 		_.mixObject(opt, {
 			instance: {},
-			http: 'http://localhost'
+			socket: false // or {url: ''}
 		});
 
 		// init instance for pool & sync
@@ -34,12 +34,10 @@ var ekitjs = Class.extend({
 			this.instanceSync[key][func_name] = true;
 			this.instanceEws[key][func_name] = true;
 		}, undefined, this);
-
 		// init socket
-		if(opt.socket === true) {
-			this.socket = new Socket(opt.http);
+		if(opt.socket !== false) {
+			this.socket = new Socket(opt.socket.http);
 		};
-
 		// set instance
 		this.setInstance();
 	},

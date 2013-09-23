@@ -19,7 +19,7 @@ instance.base.types.refresh = function() {
 			return function(opt) {
 				opt === undefined ? opt = {} : null;
 				var res = new value(opt);
-				res.__type = key;
+				res.__type === undefined ? res.__type = key : null;
 				return res;
 			};
 		})(value, key);
