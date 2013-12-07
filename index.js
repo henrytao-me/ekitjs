@@ -75,6 +75,8 @@ ekitjs = Class.extend({
 			try {
 				this.config = JSON.parse(fs.readFileSync(path.join(this.root_path, 'config.json'), 'utf8'));
 			} catch(ex) {
+				console.log('config.json error');
+				process.exit(1);
 			};
 			!_.isObject(this.config, true) ? this.config = {} : null;
 			_.mixObject(this.config, this.def);
@@ -82,6 +84,8 @@ ekitjs = Class.extend({
 			_.each(this.config, function(value, key) {
 				if(_.isObject(value, true) && value['development'] !== undefined) {
 					this.config[key] = value[this.config.env];
+				}else{
+					this.config[key] = value;
 				};
 			}, undefined, this);
 			break;
@@ -406,7 +410,7 @@ ekitjs = Class.extend({
 				};
 			};
 		}, undefined, this);
-		if(_.keys(error_addons).length > 0 && force !== true) {// rollback
+		if(_.keys(error_addons).length > 0 && opt.force !== true) {// rollback
 			_.each(this.addons, function(addon, name) {
 				if(_.indexOf(addons_name, name) < 0 && this.addons[name]) {
 					delete this.addons[name];

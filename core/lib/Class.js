@@ -47,11 +47,12 @@
  * implementation of that method.
  */
 (function(instance) {
-	var initializing = false, fnTest = /xyz/.test(function() { xyz;
-	}) ? /\b_super\b/ : /.*/;
+	var initializing = false,
+		fnTest = /xyz/.test(function() {
+			xyz;
+		}) ? /\b_super\b/ : /.*/;
 	// The web Class implementation (does nothing)
-	instance.Class = function() {
-	};
+	instance.Class = function() {};
 
 	/**
 	 * Subclass an existing class
@@ -76,12 +77,12 @@
 		prototype.__class = true;
 		var tmp = prototype.__keys;
 		prototype.__keys = {};
-		_.each(tmp, function(value, key){
+		_.each(tmp, function(value, key) {
 			prototype.__keys[key] = value;
 		});
 
 		// Copy the properties over onto the new prototype
-		for(var name in prop) {
+		for (var name in prop) {
 			// add to __keys
 			prototype.__keys[name] = prototype.__keys[name] || {};
 			prototype.__keys[name].n = (prototype.__keys[name].n || 0) + 1;
@@ -107,21 +108,22 @@
 		};
 
 		// The dummy class constructor
+
 		function Class() {
-			if(this.constructor !== instance.Class) {
+			if (this.constructor !== instance.Class) {
 				throw new Error("You can only instanciate objects with the 'new' operator");
 				return null;
 			};
 			// All construction is actually done in the init method
-			if(!initializing && this.init) {
+			if (!initializing && this.init) {
 				var ret = this.init.apply(this, arguments);
-				if(ret) {
+				if (ret) {
 					return ret;
 				};
 			};
 			// add self object to each function, ekitjs
 			_.each(this.__keys, function(value, key) {
-				if(_.isFunction(this[key])) {
+				if (_.isFunction(this[key])) {
 					this[key].self = this;
 				};
 			}, undefined, this);
@@ -132,15 +134,15 @@
 		};
 
 		Class.include = function(properties) {
-			for(var name in properties) {
+			for (var name in properties) {
 				// add to __keys
 				prototype.__keys[name] = prototype.__keys[name] || {};
 				prototype.__keys[name].n = (prototype.__keys[name].n || 0) + 1;
 				prototype.__keys[name].type = typeof properties[name];
 				//
-				if( typeof properties[name] !== 'function' || !fnTest.test(properties[name])) {
+				if (typeof properties[name] !== 'function' || !fnTest.test(properties[name])) {
 					prototype[name] = properties[name];
-				} else if( typeof prototype[name] === 'function' && prototype.hasOwnProperty(name)) {
+				} else if (typeof prototype[name] === 'function' && prototype.hasOwnProperty(name)) {
 					prototype[name] = (function(name, fn, previous) {
 						return function() {
 							var tmp = this._super;
@@ -150,7 +152,7 @@
 							return ret;
 						}
 					})(name, properties[name], prototype[name]);
-				} else if( typeof _super[name] === 'function') {
+				} else if (typeof _super[name] === 'function') {
 					prototype[name] = (function(name, fn) {
 						return function() {
 							var tmp = this._super;
@@ -172,13 +174,13 @@
 
 		// And make this class extendable
 		Class.extend = arguments.callee;
-		
+
 		// ekitjs: dynamic extend
-		if( typeof this.extend !== 'undefined') {
+		if (typeof this.extend !== 'undefined') {
 			Class.extend = this.extend;
 		};
 		Class.__class = true;
-		
+
 		// add __keys to Class
 		Class.__keys = prototype.__keys;
 
